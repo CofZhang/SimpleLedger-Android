@@ -2,6 +2,8 @@ package com.simpleledger.app;
 
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.ViewCompat;
@@ -16,6 +18,11 @@ public class MainActivity extends AppCompatActivity {
     private Fragment activeFragment;
     private BottomNavigationView bottomNav;
     private View bottomNavContainer;
+    private View fabAdd;
+
+    // 4.6 修复：保存底部导航栏尺寸，用于正确放置凸起按钮
+    private static final int TAB_BAR_HEIGHT_DP = 64;
+    private static final int FAB_SIZE_DP = 56;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,24 +59,37 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // 凸起中间按钮：直接切换到记账页
-        findViewById(R.id.fabAdd).setOnClickListener(v -> {
+        fabAdd = findViewById(R.id.fabAdd);
+        fabAdd.setOnClickListener(v -> {
             bottomNav.setSelectedItemId(R.id.nav_add);
         });
 
-        // 4.2 版本：正确处理系统内边距
-        // 1) Fragment 容器顶部避开状态栏（解决三点菜单被裁切）
+        // 4.6 修复：正确处理系统内边距
+        // 1) Fragment 容器顶部不再设置 padding（由各 Fragment 自行处理状态栏 insets）
         // 2) 底部导航栏容器避开系统底部 Home Indicator 区域
+        // 3) 凸起按钮圆心位于 Tab 栏上边缘线上
         View container = findViewById(R.id.container);
         bottomNavContainer = (View) bottomNav.getParent();
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
             int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
             int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
 
-            // 容器顶部留出状态栏高度
-            container.setPadding(0, statusBarHeight, 0, 0);
+            // 容器顶部留出状态栏高度（保险措施，fragment 内部也会处理）
+            container.setPadding(0, 0, 0, 0);
 
             // 底部导航栏容器底部留出系统导航栏高度
             bottomNavContainer.setPadding(0, 0, 0, navBarHeight);
+
+            // 4.6 修复：凸起按钮 marginBottom = navBarHeight + tabHeight - fabRadius
+            // 让按钮圆心位于 Tab 栏上边缘线上，上半圆完全突出在 Tab 栏上方
+            float density = getResources().getDisplayMetrics().density;
+            int tabHeightPx = (int) (TAB_BAR_HEIGHT_DP * density);
+            int fabRadiusPx = (int) (FAB_SIZE_DP / 2f * density);
+            int fabMarginBottom = navBarHeight + tabHeightPx - fabRadiusPx;
+            FrameLayout.LayoutParams fabLp = (FrameLayout.LayoutParams) fabAdd.getLayoutParams();
+            fabLp.bottomMargin = fabMarginBottom;
+            fabAdd.setLayoutParams(fabLp);
+
             return insets;
         });
     }

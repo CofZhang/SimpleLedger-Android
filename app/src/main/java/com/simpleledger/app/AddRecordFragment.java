@@ -9,10 +9,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -54,6 +57,14 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
         projects = new ArrayList<>();
         accounts = new ArrayList<>();
         selectedDate = Calendar.getInstance();
+
+        // 4.6 修复：处理状态栏 insets，确保顶部导航栏完整显示
+        LinearLayout topNav = view.findViewById(R.id.topNav);
+        ViewCompat.setOnApplyWindowInsetsListener(topNav, (v, insets) -> {
+            int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+            v.setPadding(v.getPaddingLeft(), statusBarHeight, v.getPaddingRight(), v.getPaddingBottom());
+            return insets;
+        });
 
         etAmount = view.findViewById(R.id.etAmount);
         etRemark = view.findViewById(R.id.etRemark);

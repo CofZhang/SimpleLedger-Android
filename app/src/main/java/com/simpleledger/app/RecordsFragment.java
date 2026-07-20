@@ -16,11 +16,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -59,6 +62,15 @@ public class RecordsFragment extends Fragment {
         dbHelper = new DatabaseHelper(getContext());
         records = new ArrayList<>();
         currentMonth = Calendar.getInstance();
+
+        // 4.6 修复：直接在 topNav 上处理状态栏 insets，
+        // 确保顶部三点菜单按钮完整显示在状态栏下方
+        LinearLayout topNav = view.findViewById(R.id.topNav);
+        ViewCompat.setOnApplyWindowInsetsListener(topNav, (v, insets) -> {
+            int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+            v.setPadding(v.getPaddingLeft(), statusBarHeight, v.getPaddingRight(), v.getPaddingBottom());
+            return insets;
+        });
 
         rvRecords = view.findViewById(R.id.rvRecords);
         tvEmpty = view.findViewById(R.id.tvEmpty);

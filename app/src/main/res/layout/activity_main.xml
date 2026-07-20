@@ -1,54 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 4.2 版本：修复按钮遮挡问题，由 MainActivity 通过 WindowInsets 处理安全区域 -->
+<!-- 4.6 修复：正确处理凸起按钮位置，圆心位于 Tab 栏上边缘线 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_warm_spots">
 
-    <!-- Fragment 容器：顶部避开状态栏，底部避开系统导航栏 -->
+    <!-- Fragment 容器：由各 Fragment 自行处理状态栏 insets -->
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- 底部毛玻璃导航栏 + 凸起中间按钮（整体避开系统底部安全区域） -->
+    <!-- 底部毛玻璃导航栏（整体避开系统底部安全区域） -->
     <LinearLayout
+        android:id="@+id/bottomNavContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:orientation="vertical">
 
-        <FrameLayout
+        <!-- 底部 Tab 栏 -->
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNav"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <!-- 底部 Tab 栏 -->
-            <com.google.android.material.bottomnavigation.BottomNavigationView
-                android:id="@+id/bottomNav"
-                android:layout_width="match_parent"
-                android:layout_height="64dp"
-                android:background="@drawable/bg_bottom_nav"
-                app:elevation="0dp"
-                app:itemIconTint="@color/bottom_nav_color"
-                app:itemTextColor="@color/bottom_nav_color"
-                app:labelVisibilityMode="labeled"
-                app:menu="@menu/bottom_nav_menu" />
-
-            <!-- 凸起圆形玻璃主按钮（记账）：
-                 圆心位于 Tab 栏上边缘，上半圆完全突出在 Tab 栏上方，
-                 使用 marginTop 负值让按钮上移，整个圆形完整可见 -->
-            <ImageButton
-                android:id="@+id/fabAdd"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:layout_gravity="center_horizontal|top"
-                android:layout_marginTop="-28dp"
-                android:background="@drawable/bg_fab_add"
-                android:elevation="8dp"
-                android:src="@android:drawable/ic_input_add"
-                android:tint="@android:color/white" />
-        </FrameLayout>
+            android:layout_height="64dp"
+            android:background="@drawable/bg_bottom_nav"
+            app:elevation="0dp"
+            app:itemIconTint="@color/bottom_nav_color"
+            app:itemTextColor="@color/bottom_nav_color"
+            app:labelVisibilityMode="labeled"
+            app:menu="@menu/bottom_nav_menu" />
     </LinearLayout>
+
+    <!-- 4.6 凸起圆形玻璃主按钮（记账）：
+         独立浮在所有视图之上，由 MainActivity 通过 insets 动态设置 marginBottom，
+         使按钮圆心位于 Tab 栏上边缘线上，整个圆形完整可见 -->
+    <ImageButton
+        android:id="@+id/fabAdd"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="36dp"
+        android:background="@drawable/bg_fab_add"
+        android:elevation="8dp"
+        android:src="@android:drawable/ic_input_add"
+        android:scaleType="centerInside"
+        android:tint="@android:color/white" />
 
 </FrameLayout>

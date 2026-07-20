@@ -6,15 +6,18 @@
     android:orientation="vertical"
     android:background="@android:color/transparent">
 
-    <!-- 1. 顶部导航栏（全宽矩形玻璃条，56dp，标题左对齐，右保存按钮） -->
+    <!-- 1. 顶部导航栏（全宽矩形玻璃条，56dp，标题左对齐，右保存按钮）
+         4.6 修复：添加 id topNav，由代码动态添加状态栏高度的 paddingTop -->
     <LinearLayout
+        android:id="@+id/topNav"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="wrap_content"
         android:background="@drawable/bg_gradient_header"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="20dp"
-        android:paddingEnd="20dp">
+        android:paddingEnd="20dp"
+        android:minHeight="56dp">
 
         <TextView
             android:layout_width="0dp"

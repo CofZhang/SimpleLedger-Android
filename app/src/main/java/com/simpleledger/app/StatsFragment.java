@@ -7,9 +7,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -57,6 +60,14 @@ public class StatsFragment extends Fragment {
         dbHelper = new DatabaseHelper(getContext());
         currentDate = Calendar.getInstance();
         categoryStats = new ArrayList<>();
+
+        // 4.6 修复：处理状态栏 insets，确保顶部导航栏完整显示
+        LinearLayout topNav = view.findViewById(R.id.topNav);
+        ViewCompat.setOnApplyWindowInsetsListener(topNav, (v, insets) -> {
+            int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+            v.setPadding(v.getPaddingLeft(), statusBarHeight, v.getPaddingRight(), v.getPaddingBottom());
+            return insets;
+        });
 
         tabPeriod = view.findViewById(R.id.tabPeriod);
         tabChartType = view.findViewById(R.id.tabChartType);

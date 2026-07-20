@@ -6,22 +6,31 @@
     android:orientation="vertical"
     android:background="@android:color/transparent">
 
-    <!-- 1. 顶部导航栏（全宽矩形玻璃条，高度56dp，无圆角） -->
+    <!-- 1. 顶部导航栏（全宽矩形玻璃条，高度56dp，无圆角）
+         4.6 修复：添加 id topNav，由代码动态添加状态栏高度的 paddingTop，
+         确保三点菜单按钮完整显示在状态栏下方 -->
     <LinearLayout
+        android:id="@+id/topNav"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="wrap_content"
         android:background="@drawable/bg_gradient_header"
         android:gravity="center_vertical"
         android:orientation="horizontal"
+        android:paddingTop="0dp"
+        android:paddingBottom="0dp"
         android:paddingStart="20dp"
-        android:paddingEnd="20dp">
+        android:paddingEnd="20dp"
+        android:minHeight="56dp">
 
         <ImageButton
             android:id="@+id/btnMore"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="14dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_more"
+            android:scaleType="centerInside"
             android:tint="@color/text_primary" />
 
         <TextView
@@ -36,10 +45,13 @@
 
         <ImageButton
             android:id="@+id/btnBudget"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="14dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_my_calendar"
+            android:scaleType="centerInside"
             android:tint="@color/text_primary" />
     </LinearLayout>
 
