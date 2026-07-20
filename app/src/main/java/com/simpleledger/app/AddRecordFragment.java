@@ -280,6 +280,21 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
         categories.clear();
         categories.addAll(dbHelper.getCategories(currentType));
         categoryAdapter.updateData(categories);
+
+        // 5.0 修复：手动设置 RecyclerView 高度，避免在 NestedScrollView 中
+        // GridLayoutManager 的 wrap_content 测量 bug 导致只显示部分分类
+        RecyclerView rvCats = getView().findViewById(R.id.rvCategories);
+        if (rvCats != null && !categories.isEmpty()) {
+            int spanCount = 4;
+            int rowCount = (int) Math.ceil(categories.size() / (double) spanCount);
+            // 每个 item 高度约 90dp（58dp 图标 + 4dp 间距 + 16dp 文字 + 12dp padding）
+            float density = getResources().getDisplayMetrics().density;
+            int itemHeightPx = (int) (90 * density);
+            ViewGroup.LayoutParams lp = rvCats.getLayoutParams();
+            lp.height = rowCount * itemHeightPx;
+            rvCats.setLayoutParams(lp);
+        }
+
         if (!categories.isEmpty()) {
             selectedCategory = categories.get(0);
             categoryAdapter.setSelectedCategoryId(selectedCategory.getId());

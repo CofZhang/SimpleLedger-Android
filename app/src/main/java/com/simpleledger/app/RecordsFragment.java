@@ -152,6 +152,8 @@ public class RecordsFragment extends Fragment {
                 .create();
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            // 5.0 增强背景虚化：提高 dimAmount 使背景更暗更模糊
+            dialog.getWindow().setDimAmount(0.85f);
         }
 
         dialogView.findViewById(R.id.itemStats).setOnClickListener(v -> {
@@ -238,6 +240,8 @@ public class RecordsFragment extends Fragment {
                 .create();
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            // 5.0 增强背景虚化：提高 dimAmount 使背景更暗更模糊
+            dialog.getWindow().setDimAmount(0.85f);
         }
 
         TextView tvCategory = dialogView.findViewById(R.id.tvDetailCategory);

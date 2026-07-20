@@ -5,22 +5,28 @@
     android:orientation="vertical"
     android:background="@drawable/bg_warm_spots">
 
-    <!-- 顶部玻璃条导航栏 -->
+    <!-- 顶部玻璃条导航栏
+         5.0 修复：添加 id topNav，由代码动态添加状态栏高度的 paddingTop -->
     <LinearLayout
+        android:id="@+id/topNav"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="wrap_content"
         android:background="@drawable/bg_gradient_header"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="20dp"
-        android:paddingEnd="20dp">
+        android:paddingEnd="20dp"
+        android:minHeight="56dp">
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="14dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_media_previous"
+            android:scaleType="centerInside"
             android:tint="@color/text_primary" />
 
         <TextView
@@ -34,8 +40,8 @@
             android:textStyle="bold" />
 
         <View
-            android:layout_width="22dp"
-            android:layout_height="22dp" />
+            android:layout_width="28dp"
+            android:layout_height="28dp" />
     </LinearLayout>
 
     <ScrollView
@@ -176,7 +182,7 @@
                 <LinearLayout
                     android:id="@+id/itemHeatmap"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:padding="16dp">
@@ -204,11 +210,14 @@
                             android:textSize="15sp" />
 
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="GitHub 风格的全年消费活跃度"
+                            android:layout_marginTop="2dp"
+                            android:text="GitHub 风格的全年消费活跃度，点击色块查看当日明细"
                             android:textColor="@color/text_hint"
-                            android:textSize="11sp" />
+                            android:textSize="11sp"
+                            android:maxLines="2"
+                            android:ellipsize="none" />
                     </LinearLayout>
 
                     <TextView
@@ -229,7 +238,7 @@
                 <LinearLayout
                     android:id="@+id/itemPivot"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:padding="16dp">
@@ -257,11 +266,14 @@
                             android:textSize="15sp" />
 
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="行=月份 列=分类 值=金额"
+                            android:layout_marginTop="2dp"
+                            android:text="自定义行（时间）、列（分类）、值（金额）生成报表"
                             android:textColor="@color/text_hint"
-                            android:textSize="11sp" />
+                            android:textSize="11sp"
+                            android:maxLines="2"
+                            android:ellipsize="none" />
                     </LinearLayout>
 
                     <TextView
@@ -362,7 +374,7 @@
                         android:id="@+id/tvVersion"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="4.5"
+                        android:text="5.0"
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp" />
                 </LinearLayout>
