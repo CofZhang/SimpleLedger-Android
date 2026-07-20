@@ -1,5 +1,6 @@
 package com.simpleledger.app;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +24,14 @@ public class MainActivity extends AppCompatActivity {
     // 4.6 修复：保存底部导航栏尺寸，用于正确放置凸起按钮
     private static final int TAB_BAR_HEIGHT_DP = 64;
     private static final int FAB_SIZE_DP = 56;
+
+    // 5.2 桌面小组件：通过 Intent extra 指定启动后切换到哪个 Fragment
+    // 取值："records"（账单）、"add_expense"（记支出）、"add_income"（记收入）、"stats"（统计）
+    public static final String EXTRA_TARGET = "extra_target";
+    public static final String TARGET_RECORDS = "records";
+    public static final String TARGET_ADD_EXPENSE = "add_expense";
+    public static final String TARGET_ADD_INCOME = "add_income";
+    public static final String TARGET_STATS = "stats";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +101,46 @@ public class MainActivity extends AppCompatActivity {
 
             return insets;
         });
+
+        // 5.2 桌面小组件：根据 Intent extra 切换到目标 Fragment
+        handleWidgetIntent(getIntent());
+    }
+
+    // 5.2 桌面小组件：处理从桌面小组件点击传来的 Intent
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleWidgetIntent(intent);
+    }
+
+    private void handleWidgetIntent(Intent intent) {
+        if (intent == null) return;
+        String target = intent.getStringExtra(EXTRA_TARGET);
+        if (target == null) return;
+
+        switch (target) {
+            case TARGET_RECORDS:
+                bottomNav.setSelectedItemId(R.id.nav_records);
+                break;
+            case TARGET_ADD_EXPENSE:
+                bottomNav.setSelectedItemId(R.id.nav_add);
+                if (addRecordFragment instanceof AddRecordFragment) {
+                    ((AddRecordFragment) addRecordFragment).setType(Record.TYPE_EXPENSE);
+                }
+                break;
+            case TARGET_ADD_INCOME:
+                bottomNav.setSelectedItemId(R.id.nav_add);
+                if (addRecordFragment instanceof AddRecordFragment) {
+                    ((AddRecordFragment) addRecordFragment).setType(Record.TYPE_INCOME);
+                }
+                break;
+            case TARGET_STATS:
+                bottomNav.setSelectedItemId(R.id.nav_stats);
+                break;
+        }
+        // 清除 extra，避免旋转屏幕时重复触发
+        intent.removeExtra(EXTRA_TARGET);
     }
 
     private void switchFragment(Fragment fragment) {

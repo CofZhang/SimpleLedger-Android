@@ -181,6 +181,15 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
         return view;
     }
 
+    /** 5.2 桌面小组件：外部调用切换支出/收入类型 */
+    public void setType(int type) {
+        if (tabType == null) return;
+        int targetTab = (type == Record.TYPE_INCOME) ? 1 : 0;
+        if (tabType.getSelectedTabPosition() != targetTab) {
+            tabType.getTabAt(targetTab).select();
+        }
+    }
+
     /** 4.5 双击分类选择框：快速打开最近使用分类 */
     private void showRecentCategoriesDialog() {
         List<Category> recent = dbHelper.getRecentCategories(currentType, 12);

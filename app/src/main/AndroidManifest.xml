@@ -16,7 +16,8 @@
         android:theme="@style/Theme.SimpleLedger">
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -37,6 +38,18 @@
         <receiver
             android:name=".ReminderReceiver"
             android:exported="false" />
+
+        <!-- 5.2 桌面快速记账小组件 -->
+        <receiver
+            android:name=".QuickWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_widget_info" />
+        </receiver>
     </application>
 
 </manifest>
