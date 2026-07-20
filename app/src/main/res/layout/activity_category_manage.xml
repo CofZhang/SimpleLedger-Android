@@ -53,6 +53,23 @@
             app:tabSelectedTextColor="@color/colorAccent"
             app:tabTextColor="@color/text_secondary" />
 
+        <!-- 4.5 无限级分类：面包屑导航 -->
+        <HorizontalScrollView
+            android:id="@+id/breadcrumbScroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/breadcrumbContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvCategories"
             android:layout_width="match_parent"

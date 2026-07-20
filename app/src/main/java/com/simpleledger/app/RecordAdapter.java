@@ -49,6 +49,9 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.ViewHolder
         Record record = records.get(position);
         holder.tvCategory.setText(record.getCategoryName());
 
+        // 4.5 重要标记
+        holder.tvImportant.setVisibility(record.isImportant() ? View.VISIBLE : View.GONE);
+
         if (record.getRemark() != null && !record.getRemark().isEmpty()) {
             holder.tvRemark.setText(record.getRemark());
             holder.tvRemark.setVisibility(View.VISIBLE);
@@ -110,7 +113,7 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.ViewHolder
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvCategoryIcon, tvCategory, tvProjectTag, tvDate, tvRemark, tvAmount;
+        TextView tvCategoryIcon, tvCategory, tvProjectTag, tvDate, tvRemark, tvAmount, tvImportant;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -120,6 +123,7 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.ViewHolder
             tvDate = itemView.findViewById(R.id.tvDate);
             tvRemark = itemView.findViewById(R.id.tvRemark);
             tvAmount = itemView.findViewById(R.id.tvAmount);
+            tvImportant = itemView.findViewById(R.id.tvImportant);
         }
     }
 }

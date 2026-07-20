@@ -99,11 +99,19 @@
                     android:layout_marginTop="8dp"
                     android:background="@null"
                     android:hint="@string/input_amount"
-                    android:inputType="numberDecimal"
+                    android:inputType="text"
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/text_hint"
                     android:textSize="32sp"
                     android:textStyle="bold" />
+
+                <!-- 4.5 内置计算器键盘 -->
+                <com.simpleledger.app.CalculatorKeyboard
+                    android:id="@+id/calculatorKeyboard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_glass_capsule" />
             </LinearLayout>
 
             <!-- 4. 分类网格 -->

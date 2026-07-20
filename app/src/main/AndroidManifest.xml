@@ -3,6 +3,10 @@
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:allowBackup="true"
@@ -26,6 +30,13 @@
         <activity android:name=".ProjectsActivity" />
         <activity android:name=".ProjectDetailActivity" />
         <activity android:name=".AccountsActivity" />
+        <activity android:name=".HeatmapActivity" />
+        <activity android:name=".PivotActivity" />
+        <activity android:name=".SettingsActivity" />
+
+        <receiver
+            android:name=".ReminderReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

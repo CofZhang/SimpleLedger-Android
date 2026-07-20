@@ -6,6 +6,7 @@ public class Category {
     private String icon;
     private int color;
     private int type;
+    private long parentId;  // 4.5 无限级分类，0 表示顶级
 
     public Category() {}
 
@@ -30,4 +31,7 @@ public class Category {
 
     public int getType() { return type; }
     public void setType(int type) { this.type = type; }
+
+    public long getParentId() { return parentId; }
+    public void setParentId(long parentId) { this.parentId = parentId; }
 }

@@ -12,7 +12,7 @@ import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "simple_ledger.db";
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 5;
 
     private static final String TABLE_RECORDS = "records";
     private static final String TABLE_CATEGORIES = "categories";
@@ -30,6 +30,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String KEY_TIMESTAMP = "timestamp";
     private static final String KEY_REMARK = "remark";
     private static final String KEY_TAGS = "tags";
+    private static final String KEY_IS_IMPORTANT = "is_important";
 
     private static final String KEY_ACC_NAME = "name";
     private static final String KEY_ACC_ICON = "icon";
@@ -42,6 +43,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String KEY_CAT_ICON = "icon";
     private static final String KEY_CAT_COLOR = "color";
     private static final String KEY_CAT_TYPE = "type";
+    private static final String KEY_CAT_PARENT_ID = "parent_id";
 
     private static final String KEY_PROJ_NAME = "name";
     private static final String KEY_PROJ_DESC = "description";
@@ -61,7 +63,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + KEY_CAT_NAME + " TEXT NOT NULL, "
                 + KEY_CAT_ICON + " TEXT NOT NULL, "
                 + KEY_CAT_COLOR + " INTEGER NOT NULL, "
-                + KEY_CAT_TYPE + " INTEGER NOT NULL)";
+                + KEY_CAT_TYPE + " INTEGER NOT NULL, "
+                + KEY_CAT_PARENT_ID + " INTEGER DEFAULT 0)";
         db.execSQL(createCategoriesTable);
 
         String createRecordsTable = "CREATE TABLE " + TABLE_RECORDS + " ("
@@ -74,7 +77,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + KEY_DATE + " TEXT NOT NULL, "
                 + KEY_TIMESTAMP + " INTEGER NOT NULL, "
                 + KEY_REMARK + " TEXT, "
-                + KEY_TAGS + " TEXT)";
+                + KEY_TAGS + " TEXT, "
+                + KEY_IS_IMPORTANT + " INTEGER DEFAULT 0)";
         db.execSQL(createRecordsTable);
 
         String createProjectsTable = "CREATE TABLE " + TABLE_PROJECTS + " ("
@@ -155,12 +159,47 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(KEY_CAT_ICON, category.getIcon());
         values.put(KEY_CAT_COLOR, category.getColor());
         values.put(KEY_CAT_TYPE, category.getType());
+        values.put(KEY_CAT_PARENT_ID, category.getParentId());
         return db.insert(TABLE_CATEGORIES, null, values);
     }
 
     public long addCategory(Category category) {
         SQLiteDatabase db = this.getWritableDatabase();
         return addCategory(db, category);
+    }
+
+    public void updateCategory(Category category) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_CAT_NAME, category.getName());
+        values.put(KEY_CAT_ICON, category.getIcon());
+        values.put(KEY_CAT_COLOR, category.getColor());
+        values.put(KEY_CAT_TYPE, category.getType());
+        values.put(KEY_CAT_PARENT_ID, category.getParentId());
+        db.update(TABLE_CATEGORIES, values, KEY_ID + " = ?", new String[]{String.valueOf(category.getId())});
+    }
+
+    public List<Category> getCategoriesByParent(long parentId, int type) {
+        List<Category> categories = new ArrayList<>();
+        String selectQuery = "SELECT * FROM " + TABLE_CATEGORIES
+                + " WHERE " + KEY_CAT_TYPE + " = ? AND " + KEY_CAT_PARENT_ID + " = ?"
+                + " ORDER BY " + KEY_ID;
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, new String[]{String.valueOf(type), String.valueOf(parentId)});
+        if (cursor.moveToFirst()) {
+            do {
+                Category category = new Category();
+                category.setId(cursor.getLong(0));
+                category.setName(cursor.getString(1));
+                category.setIcon(cursor.getString(2));
+                category.setColor(cursor.getInt(3));
+                category.setType(cursor.getInt(4));
+                category.setParentId(cursor.getInt(5));
+                categories.add(category);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return categories;
     }
 
     private void initDefaultAccounts(SQLiteDatabase db) {
@@ -266,6 +305,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 category.setIcon(cursor.getString(2));
                 category.setColor(cursor.getInt(3));
                 category.setType(cursor.getInt(4));
+                category.setParentId(cursor.getInt(5));
                 categories.add(category);
             } while (cursor.moveToNext());
         }
@@ -275,7 +315,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public void deleteCategory(long id) {
         SQLiteDatabase db = this.getWritableDatabase();
-        db.delete(TABLE_CATEGORIES, KEY_ID + " = ?", new String[]{String.valueOf(id)});
+        // 删除该分类及其所有子分类
+        db.delete(TABLE_CATEGORIES, KEY_ID + " = ? OR " + KEY_CAT_PARENT_ID + " = ?",
+                new String[]{String.valueOf(id), String.valueOf(id)});
     }
 
     public long addRecord(Record record) {
@@ -290,6 +332,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(KEY_TIMESTAMP, record.getTimestamp());
         values.put(KEY_REMARK, record.getRemark());
         values.put(KEY_TAGS, record.getTags());
+        values.put(KEY_IS_IMPORTANT, record.isImportant() ? 1 : 0);
         long id = db.insert(TABLE_RECORDS, null, values);
 
         // 更新账户余额
@@ -298,6 +341,189 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             updateAccountBalance(record.getAccountId(), delta);
         }
         return id;
+    }
+
+    public void updateRecord(Record record) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        // 查询原记录以回滚账户余额
+        Cursor cursor = db.rawQuery("SELECT " + KEY_TYPE + "," + KEY_AMOUNT + "," + KEY_ACCOUNT_ID + " FROM " + TABLE_RECORDS + " WHERE " + KEY_ID + " = ?",
+                new String[]{String.valueOf(record.getId())});
+        if (cursor.moveToFirst()) {
+            int oldType = cursor.getInt(0);
+            double oldAmount = cursor.getDouble(1);
+            long oldAccountId = cursor.getLong(2);
+            if (oldAccountId > 0) {
+                double delta = oldType == Record.TYPE_EXPENSE ? oldAmount : -oldAmount;
+                updateAccountBalance(oldAccountId, delta);
+            }
+        }
+        cursor.close();
+
+        ContentValues values = new ContentValues();
+        values.put(KEY_TYPE, record.getType());
+        values.put(KEY_AMOUNT, record.getAmount());
+        values.put(KEY_CATEGORY_ID, record.getCategoryId());
+        values.put(KEY_PROJECT_ID, record.getProjectId());
+        values.put(KEY_ACCOUNT_ID, record.getAccountId());
+        values.put(KEY_DATE, record.getDate());
+        values.put(KEY_TIMESTAMP, record.getTimestamp());
+        values.put(KEY_REMARK, record.getRemark());
+        values.put(KEY_TAGS, record.getTags());
+        values.put(KEY_IS_IMPORTANT, record.isImportant() ? 1 : 0);
+        db.update(TABLE_RECORDS, values, KEY_ID + " = ?", new String[]{String.valueOf(record.getId())});
+
+        // 应用新账户余额变动
+        if (record.getAccountId() > 0) {
+            double delta = record.getType() == Record.TYPE_EXPENSE ? -record.getAmount() : record.getAmount();
+            updateAccountBalance(record.getAccountId(), delta);
+        }
+    }
+
+    public void setRecordImportant(long recordId, boolean important) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_IS_IMPORTANT, important ? 1 : 0);
+        db.update(TABLE_RECORDS, values, KEY_ID + " = ?", new String[]{String.valueOf(recordId)});
+    }
+
+    public Record getRecord(long id) {
+        String selectQuery = "SELECT r.*, c." + KEY_CAT_NAME + ", c." + KEY_CAT_ICON + ", c." + KEY_CAT_COLOR
+                + ", p." + KEY_PROJ_NAME
+                + ", a." + KEY_ACC_NAME + ", a." + KEY_ACC_ICON
+                + " FROM " + TABLE_RECORDS + " r"
+                + " LEFT JOIN " + TABLE_CATEGORIES + " c ON r." + KEY_CATEGORY_ID + " = c." + KEY_ID
+                + " LEFT JOIN " + TABLE_PROJECTS + " p ON r." + KEY_PROJECT_ID + " = p." + KEY_ID
+                + " LEFT JOIN " + TABLE_ACCOUNTS + " a ON r." + KEY_ACCOUNT_ID + " = a." + KEY_ID
+                + " WHERE r." + KEY_ID + " = ?";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, new String[]{String.valueOf(id)});
+        Record record = null;
+        if (cursor.moveToFirst()) {
+            record = cursorToRecord(cursor);
+            fillJoinFields(record, cursor);
+        }
+        cursor.close();
+        return record;
+    }
+
+    public List<Record> getRecordsByDate(String date) {
+        List<Record> records = new ArrayList<>();
+        String selectQuery = "SELECT r.*, c." + KEY_CAT_NAME + ", c." + KEY_CAT_ICON + ", c." + KEY_CAT_COLOR
+                + ", p." + KEY_PROJ_NAME
+                + ", a." + KEY_ACC_NAME + ", a." + KEY_ACC_ICON
+                + " FROM " + TABLE_RECORDS + " r"
+                + " LEFT JOIN " + TABLE_CATEGORIES + " c ON r." + KEY_CATEGORY_ID + " = c." + KEY_ID
+                + " LEFT JOIN " + TABLE_PROJECTS + " p ON r." + KEY_PROJECT_ID + " = p." + KEY_ID
+                + " LEFT JOIN " + TABLE_ACCOUNTS + " a ON r." + KEY_ACCOUNT_ID + " = a." + KEY_ID
+                + " WHERE r." + KEY_DATE + " = ?"
+                + " ORDER BY r." + KEY_TIMESTAMP + " DESC";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, new String[]{date});
+        if (cursor.moveToFirst()) {
+            do {
+                Record record = cursorToRecord(cursor);
+                fillJoinFields(record, cursor);
+                records.add(record);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return records;
+    }
+
+    public List<Record> getRecordsByYear(int year) {
+        List<Record> records = new ArrayList<>();
+        String selectQuery = "SELECT r.*, c." + KEY_CAT_NAME + ", c." + KEY_CAT_ICON + ", c." + KEY_CAT_COLOR
+                + ", p." + KEY_PROJ_NAME
+                + ", a." + KEY_ACC_NAME + ", a." + KEY_ACC_ICON
+                + " FROM " + TABLE_RECORDS + " r"
+                + " LEFT JOIN " + TABLE_CATEGORIES + " c ON r." + KEY_CATEGORY_ID + " = c." + KEY_ID
+                + " LEFT JOIN " + TABLE_PROJECTS + " p ON r." + KEY_PROJECT_ID + " = p." + KEY_ID
+                + " LEFT JOIN " + TABLE_ACCOUNTS + " a ON r." + KEY_ACCOUNT_ID + " = a." + KEY_ID
+                + " WHERE r." + KEY_DATE + " LIKE ?"
+                + " ORDER BY r." + KEY_TIMESTAMP + " DESC";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, new String[]{year + "%"});
+        if (cursor.moveToFirst()) {
+            do {
+                Record record = cursorToRecord(cursor);
+                fillJoinFields(record, cursor);
+                records.add(record);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return records;
+    }
+
+    /** 4.5 多维度透视：行=月份，列=分类，值=支出金额合计 */
+    public java.util.Map<String, java.util.Map<String, Double>> getPivotData(int year, int type) {
+        java.util.Map<String, java.util.Map<String, Double>> pivot = new java.util.TreeMap<>();
+        String query = "SELECT r." + KEY_DATE + ", c." + KEY_CAT_NAME + ", SUM(r." + KEY_AMOUNT + ") as total"
+                + " FROM " + TABLE_RECORDS + " r"
+                + " JOIN " + TABLE_CATEGORIES + " c ON r." + KEY_CATEGORY_ID + " = c." + KEY_ID
+                + " WHERE r." + KEY_DATE + " LIKE ? AND r." + KEY_TYPE + " = ?"
+                + " GROUP BY r." + KEY_DATE + ", c." + KEY_CAT_NAME;
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(query, new String[]{year + "%", String.valueOf(type)});
+        if (cursor.moveToFirst()) {
+            do {
+                String date = cursor.getString(0);
+                String catName = cursor.getString(1);
+                double total = cursor.getDouble(2);
+                // 转为 "yyyy-MM"
+                String month = date.length() >= 7 ? date.substring(0, 7) : date;
+                java.util.Map<String, Double> row = pivot.computeIfAbsent(month, k -> new java.util.HashMap<>());
+                row.merge(catName, total, Double::sum);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return pivot;
+    }
+
+    /** 4.5 年度热力图数据：日期 -> 支出金额 */
+    public java.util.Map<String, Double> getDailyExpenseForYear(int year) {
+        java.util.Map<String, Double> result = new java.util.HashMap<>();
+        String query = "SELECT " + KEY_DATE + ", SUM(" + KEY_AMOUNT + ") FROM " + TABLE_RECORDS
+                + " WHERE " + KEY_DATE + " LIKE ? AND " + KEY_TYPE + " = ?"
+                + " GROUP BY " + KEY_DATE;
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(query, new String[]{year + "%", String.valueOf(Record.TYPE_EXPENSE)});
+        if (cursor.moveToFirst()) {
+            do {
+                String date = cursor.getString(0);
+                double total = cursor.getDouble(1);
+                result.put(date, total);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return result;
+    }
+
+    /** 4.5 最近使用分类（按使用频率） */
+    public List<Category> getRecentCategories(int type, int limit) {
+        List<Category> result = new ArrayList<>();
+        String query = "SELECT c.*, COUNT(r." + KEY_ID + ") as cnt, MAX(r." + KEY_TIMESTAMP + ") as last"
+                + " FROM " + TABLE_CATEGORIES + " c"
+                + " JOIN " + TABLE_RECORDS + " r ON r." + KEY_CATEGORY_ID + " = c." + KEY_ID
+                + " WHERE c." + KEY_CAT_TYPE + " = ?"
+                + " GROUP BY c." + KEY_ID
+                + " ORDER BY last DESC"
+                + " LIMIT ?";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(type), String.valueOf(limit)});
+        if (cursor.moveToFirst()) {
+            do {
+                Category category = new Category();
+                category.setId(cursor.getLong(0));
+                category.setName(cursor.getString(1));
+                category.setIcon(cursor.getString(2));
+                category.setColor(cursor.getInt(3));
+                category.setType(cursor.getInt(4));
+                category.setParentId(cursor.getInt(5));
+                result.add(category);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return result;
     }
 
     public void transfer(long fromAccountId, long toAccountId, double amount) {
@@ -320,16 +546,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         record.setTimestamp(cursor.getLong(7));
         record.setRemark(cursor.getString(8));
         record.setTags(cursor.getString(9));
+        if (cursor.getColumnCount() > 10 && cursor.getColumnIndex(KEY_IS_IMPORTANT) >= 0) {
+            record.setImportant(cursor.getInt(cursor.getColumnIndex(KEY_IS_IMPORTANT)) == 1);
+        }
         return record;
     }
 
     private void fillJoinFields(Record record, Cursor cursor) {
-        record.setCategoryName(cursor.getString(10));
-        record.setCategoryIcon(cursor.getString(11));
-        record.setCategoryColor(cursor.getInt(12));
-        record.setProjectName(cursor.getString(13));
-        record.setAccountName(cursor.getString(14));
-        record.setAccountIcon(cursor.getString(15));
+        // r.* 包含 11 列：id,type,amount,category_id,project_id,account_id,date,timestamp,remark,tags,is_important
+        // 后续 join 字段从索引 11 开始
+        int baseIdx = 11;
+        record.setCategoryName(cursor.getString(baseIdx));
+        record.setCategoryIcon(cursor.getString(baseIdx + 1));
+        record.setCategoryColor(cursor.getInt(baseIdx + 2));
+        record.setProjectName(cursor.getString(baseIdx + 3));
+        record.setAccountName(cursor.getString(baseIdx + 4));
+        record.setAccountIcon(cursor.getString(baseIdx + 5));
     }
 
     public List<Record> getAllRecords() {
@@ -666,6 +898,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (oldVersion < 4) {
             // 4.2 版本：刷新所有默认分类的颜色为降饱和度莫兰迪色系
             refreshDefaultCategoryColors(db);
+        }
+        if (oldVersion < 5) {
+            // 4.5 版本：无限级分类 + 重要标记
+            db.execSQL("ALTER TABLE " + TABLE_CATEGORIES + " ADD COLUMN " + KEY_CAT_PARENT_ID + " INTEGER DEFAULT 0");
+            db.execSQL("ALTER TABLE " + TABLE_RECORDS + " ADD COLUMN " + KEY_IS_IMPORTANT + " INTEGER DEFAULT 0");
         }
     }
 

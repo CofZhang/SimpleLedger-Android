@@ -76,4 +76,60 @@
     <string name="bonus">奖金</string>
     <string name="investment">投资</string>
     <string name="other_income">其他收入</string>
+
+    <!-- 4.5 版本新增字符串 -->
+    <string name="settings">设置</string>
+    <string name="settings_general">通用</string>
+    <string name="settings_data_analysis">数据分析</string>
+    <string name="settings_data_manage">数据管理</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_reminder">每日记账提醒</string>
+    <string name="settings_reminder_time">提醒时间</string>
+    <string name="settings_haptic">触觉反馈</string>
+    <string name="settings_haptic_desc">操作时轻微震动</string>
+    <string name="settings_heatmap">年度账单热力图</string>
+    <string name="settings_pivot">多维度透视表</string>
+    <string name="settings_export_csv">导出CSV</string>
+    <string name="settings_about_version">版本</string>
+    <string name="settings_about_desc">咖啡记账 · 专业记账工具</string>
+
+    <string name="heatmap_title">年度热力图</string>
+    <string name="heatmap_legend">消费活跃度</string>
+    <string name="heatmap_less">少</string>
+    <string name="heatmap_more">多</string>
+    <string name="heatmap_no_data">当年无消费记录</string>
+
+    <string name="pivot_title">数据透视表</string>
+    <string name="pivot_row_time">时间（行）</string>
+    <string name="pivot_col_category">分类（列）</string>
+    <string name="pivot_val_amount">金额（值）</string>
+    <string name="pivot_total">合计</string>
+    <string name="pivot_no_data">暂无数据</string>
+
+    <string name="calc_preview">预览</string>
+    <string name="recent_categories">最近使用分类</string>
+    <string name="no_recent_categories">暂无最近使用分类</string>
+
+    <string name="menu_view_detail">查看详情</string>
+    <string name="menu_share_image">分享为图片</string>
+    <string name="menu_mark_important">标记为重要</string>
+    <string name="menu_unmark_important">取消重要标记</string>
+    <string name="menu_delete">删除</string>
+    <string name="undo">撤销</string>
+    <string name="deleted">已删除</string>
+
+    <string name="parent_category">父分类</string>
+    <string name="no_parent">顶级分类</string>
+    <string name="select_parent_category">选择父分类（可选）</string>
+    <string name="sub_categories">子分类</string>
+
+    <string name="record_detail">账单详情</string>
+    <string name="record_tags">标签</string>
+    <string name="record_account">账户</string>
+    <string name="no_tags">无标签</string>
+
+    <string name="reminder_title">记账提醒</string>
+    <string name="reminder_content">今天还没记账哦，快来记一笔吧~</string>
+    <string name="reminder_channel_name">记账提醒</string>
+    <string name="reminder_channel_desc">每日定时提醒你记账</string>
 </resources>

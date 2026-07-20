@@ -2,6 +2,8 @@ package com.simpleledger.app;
 
 import android.app.DatePickerDialog;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,10 +38,12 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
     private List<Project> projects;
     private List<Account> accounts;
     private CategoryAdapter categoryAdapter;
+    private CalculatorKeyboard calculatorKeyboard;
 
     private EditText etAmount, etRemark, etTags;
     private TextView tvDate, tvProject, tvAccount;
     private TabLayout tabType;
+    private long lastCategoryHeaderClickTime = 0;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -58,9 +62,13 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
         tvProject = view.findViewById(R.id.tvProject);
         tvAccount = view.findViewById(R.id.tvAccount);
         tabType = view.findViewById(R.id.tabType);
+        calculatorKeyboard = view.findViewById(R.id.calculatorKeyboard);
         RecyclerView rvCategories = view.findViewById(R.id.rvCategories);
         ImageButton btnSelectProject = view.findViewById(R.id.btnSelectProject);
         ImageButton btnSelectAccount = view.findViewById(R.id.btnSelectAccount);
+
+        // 4.5 绑定计算器键盘到金额输入框（禁用系统输入法）
+        calculatorKeyboard.bindEditText(etAmount);
 
         rvCategories.setLayoutManager(new GridLayoutManager(getContext(), 4));
         categoryAdapter = new CategoryAdapter(categories, this);
@@ -71,6 +79,7 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
         tabType.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
+                HapticHelper.light(getContext());
                 currentType = tab.getPosition();
                 selectedProjectId = 0;
                 selectedProjectName = null;
@@ -86,14 +95,66 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
         });
 
         updateDateDisplay();
-        tvDate.setOnClickListener(v -> showDatePicker());
+        tvDate.setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            showDatePicker();
+        });
 
-        view.findViewById(R.id.btnSave).setOnClickListener(v -> saveRecord());
+        view.findViewById(R.id.btnSave).setOnClickListener(v -> {
+            HapticHelper.medium(getContext());
+            saveRecord();
+        });
 
-        tvProject.setOnClickListener(v -> showProjectPicker());
-        btnSelectProject.setOnClickListener(v -> showProjectPicker());
-        tvAccount.setOnClickListener(v -> showAccountPicker());
-        btnSelectAccount.setOnClickListener(v -> showAccountPicker());
+        tvProject.setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            showProjectPicker();
+        });
+        btnSelectProject.setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            showProjectPicker();
+        });
+        tvAccount.setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            showAccountPicker();
+        });
+        btnSelectAccount.setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            showAccountPicker();
+        });
+
+        // 4.5 分类标题双击：快速打开最近使用分类
+        View categoryHeader = null;
+        // 标题在 R.id.tvCategoryHeader（如果有），否则跳过
+        // 由于现有布局没有显式 ID 的分类标题，我们让整个分类网格区可双击
+        rvCategories.setOnTouchListener(new View.OnTouchListener() {
+            private long lastTapTime = 0;
+            @Override
+            public boolean onTouch(View v, android.view.MotionEvent event) {
+                if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+                    long now = System.currentTimeMillis();
+                    if (now - lastTapTime < 350) {
+                        // 双击触发
+                        showRecentCategoriesDialog();
+                        lastTapTime = 0;
+                    } else {
+                        lastTapTime = now;
+                    }
+                }
+                return false;
+            }
+        });
+
+        // 4.5 分类联想：输入备注时自动推荐分类
+        etRemark.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override
+            public void afterTextChanged(Editable s) {
+                suggestCategory(s.toString());
+            }
+        });
 
         // 初始化默认账户
         accounts = dbHelper.getAllAccounts();
@@ -105,6 +166,45 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
 
         loadCategories();
         return view;
+    }
+
+    /** 4.5 双击分类选择框：快速打开最近使用分类 */
+    private void showRecentCategoriesDialog() {
+        List<Category> recent = dbHelper.getRecentCategories(currentType, 12);
+        if (recent.isEmpty()) {
+            Toast.makeText(getContext(), "暂无最近使用的分类", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        List<String> names = new ArrayList<>();
+        for (Category c : recent) {
+            names.add(c.getIcon() + " " + c.getName());
+        }
+        new AlertDialog.Builder(getContext())
+                .setTitle("最近使用分类")
+                .setItems(names.toArray(new String[0]), (dialog, which) -> {
+                    Category c = recent.get(which);
+                    selectedCategory = c;
+                    categoryAdapter.setSelectedCategoryId(c.getId());
+                    HapticHelper.light(getContext());
+                    Toast.makeText(getContext(), "已选择 " + c.getName(), Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    /** 4.5 分类联想：根据备注关键词推荐分类 */
+    private void suggestCategory(String remark) {
+        if (remark == null || remark.trim().isEmpty()) return;
+        String kw = remark.trim();
+        for (Category c : categories) {
+            if (c.getName().contains(kw) || kw.contains(c.getName())) {
+                if (selectedCategory == null || selectedCategory.getId() != c.getId()) {
+                    selectedCategory = c;
+                    categoryAdapter.setSelectedCategoryId(c.getId());
+                }
+                return;
+            }
+        }
     }
 
     private void showProjectPicker() {
@@ -192,27 +292,15 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
     }
 
     private void saveRecord() {
-        String amountStr = etAmount.getText().toString().trim();
-        if (amountStr.isEmpty()) {
+        // 4.5 使用 CalculatorKeyboard 获取最终金额（支持表达式）
+        double amount = calculatorKeyboard.getAmount();
+        if (amount <= 0) {
             Toast.makeText(getContext(), R.string.input_amount, Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (selectedCategory == null) {
             Toast.makeText(getContext(), R.string.select_category, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        double amount;
-        try {
-            amount = Double.parseDouble(amountStr);
-        } catch (NumberFormatException e) {
-            Toast.makeText(getContext(), "金额格式不正确", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (amount <= 0) {
-            Toast.makeText(getContext(), "金额必须大于0", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -230,7 +318,7 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
         record.setDate(sdf.format(selectedDate.getTime()));
 
         dbHelper.addRecord(record);
-        Toast.makeText(getContext(), "保存成功", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getContext(), "保存成功 ¥" + String.format("%.2f", amount), Toast.LENGTH_SHORT).show();
 
         etAmount.setText("");
         etRemark.setText("");
@@ -243,6 +331,7 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
 
     @Override
     public void onCategoryClick(Category category) {
+        HapticHelper.light(getContext());
         selectedCategory = category;
         categoryAdapter.setSelectedCategoryId(category.getId());
     }
@@ -251,3 +340,4 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
     public void onCategoryLongClick(Category category) {
     }
 }
+

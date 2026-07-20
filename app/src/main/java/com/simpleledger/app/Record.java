@@ -17,6 +17,7 @@ public class Record {
     private long timestamp;
     private String remark;
     private String tags;
+    private boolean important;  // 4.5 标记为重要
 
     public static final int TYPE_EXPENSE = 0;
     public static final int TYPE_INCOME = 1;
@@ -70,5 +71,8 @@ public class Record {
 
     public String getTags() { return tags; }
     public void setTags(String tags) { this.tags = tags; }
+
+    public boolean isImportant() { return important; }
+    public void setImportant(boolean important) { this.important = important; }
 }
 
