@@ -12,21 +12,31 @@ import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "simple_ledger.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
 
     private static final String TABLE_RECORDS = "records";
     private static final String TABLE_CATEGORIES = "categories";
     private static final String TABLE_PROJECTS = "projects";
     private static final String TABLE_BUDGETS = "budgets";
+    private static final String TABLE_ACCOUNTS = "accounts";
 
     private static final String KEY_ID = "id";
     private static final String KEY_TYPE = "type";
     private static final String KEY_AMOUNT = "amount";
     private static final String KEY_CATEGORY_ID = "category_id";
     private static final String KEY_PROJECT_ID = "project_id";
+    private static final String KEY_ACCOUNT_ID = "account_id";
     private static final String KEY_DATE = "date";
     private static final String KEY_TIMESTAMP = "timestamp";
     private static final String KEY_REMARK = "remark";
+    private static final String KEY_TAGS = "tags";
+
+    private static final String KEY_ACC_NAME = "name";
+    private static final String KEY_ACC_ICON = "icon";
+    private static final String KEY_ACC_BALANCE = "balance";
+    private static final String KEY_ACC_INIT_BALANCE = "init_balance";
+    private static final String KEY_ACC_REMARK = "remark";
+    private static final String KEY_ACC_TYPE = "type";
 
     private static final String KEY_CAT_NAME = "name";
     private static final String KEY_CAT_ICON = "icon";
@@ -60,9 +70,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + KEY_AMOUNT + " REAL NOT NULL, "
                 + KEY_CATEGORY_ID + " INTEGER NOT NULL, "
                 + KEY_PROJECT_ID + " INTEGER DEFAULT 0, "
+                + KEY_ACCOUNT_ID + " INTEGER DEFAULT 1, "
                 + KEY_DATE + " TEXT NOT NULL, "
                 + KEY_TIMESTAMP + " INTEGER NOT NULL, "
-                + KEY_REMARK + " TEXT)";
+                + KEY_REMARK + " TEXT, "
+                + KEY_TAGS + " TEXT)";
         db.execSQL(createRecordsTable);
 
         String createProjectsTable = "CREATE TABLE " + TABLE_PROJECTS + " ("
@@ -78,7 +90,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + KEY_BUDGET_AMOUNT + " REAL NOT NULL)";
         db.execSQL(createBudgetsTable);
 
+        String createAccountsTable = "CREATE TABLE " + TABLE_ACCOUNTS + " ("
+                + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + KEY_ACC_NAME + " TEXT NOT NULL, "
+                + KEY_ACC_ICON + " TEXT NOT NULL, "
+                + KEY_ACC_TYPE + " INTEGER NOT NULL, "
+                + KEY_ACC_INIT_BALANCE + " REAL NOT NULL DEFAULT 0, "
+                + KEY_ACC_BALANCE + " REAL NOT NULL DEFAULT 0, "
+                + KEY_ACC_REMARK + " TEXT)";
+        db.execSQL(createAccountsTable);
+
         initDefaultCategories(db);
+        initDefaultAccounts(db);
     }
 
     private void initDefaultCategories(SQLiteDatabase db) {
@@ -139,6 +162,95 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return addCategory(db, category);
     }
 
+    private void initDefaultAccounts(SQLiteDatabase db) {
+        addAccount(db, new Account("现金", "💵", Account.TYPE_CASH, 0, ""));
+        addAccount(db, new Account("银行卡", "🏦", Account.TYPE_BANK, 0, ""));
+        addAccount(db, new Account("支付宝", "📱", Account.TYPE_ALIPAY, 0, ""));
+        addAccount(db, new Account("微信", "💬", Account.TYPE_WECHAT, 0, ""));
+    }
+
+    private long addAccount(SQLiteDatabase db, Account account) {
+        ContentValues values = new ContentValues();
+        values.put(KEY_ACC_NAME, account.getName());
+        values.put(KEY_ACC_ICON, account.getIcon());
+        values.put(KEY_ACC_TYPE, account.getType());
+        values.put(KEY_ACC_INIT_BALANCE, account.getInitBalance());
+        values.put(KEY_ACC_BALANCE, account.getInitBalance());
+        values.put(KEY_ACC_REMARK, account.getRemark());
+        return db.insert(TABLE_ACCOUNTS, null, values);
+    }
+
+    public long addAccount(Account account) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        return addAccount(db, account);
+    }
+
+    public List<Account> getAllAccounts() {
+        List<Account> accounts = new ArrayList<>();
+        String query = "SELECT * FROM " + TABLE_ACCOUNTS + " ORDER BY " + KEY_ID;
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(query, null);
+        if (cursor.moveToFirst()) {
+            do {
+                Account acc = new Account();
+                acc.setId(cursor.getLong(0));
+                acc.setName(cursor.getString(1));
+                acc.setIcon(cursor.getString(2));
+                acc.setType(cursor.getInt(3));
+                acc.setInitBalance(cursor.getDouble(4));
+                acc.setBalance(cursor.getDouble(5));
+                acc.setRemark(cursor.getString(6));
+                accounts.add(acc);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return accounts;
+    }
+
+    public Account getAccount(long id) {
+        String query = "SELECT * FROM " + TABLE_ACCOUNTS + " WHERE " + KEY_ID + " = ?";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(id)});
+        Account acc = null;
+        if (cursor.moveToFirst()) {
+            acc = new Account();
+            acc.setId(cursor.getLong(0));
+            acc.setName(cursor.getString(1));
+            acc.setIcon(cursor.getString(2));
+            acc.setType(cursor.getInt(3));
+            acc.setInitBalance(cursor.getDouble(4));
+            acc.setBalance(cursor.getDouble(5));
+            acc.setRemark(cursor.getString(6));
+        }
+        cursor.close();
+        return acc;
+    }
+
+    public void updateAccountBalance(long accountId, double delta) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL("UPDATE " + TABLE_ACCOUNTS + " SET " + KEY_ACC_BALANCE + " = " + KEY_ACC_BALANCE + " + ? WHERE " + KEY_ID + " = ?",
+                new Object[]{delta, accountId});
+    }
+
+    public void deleteAccount(long id) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_ACCOUNT_ID, 1);
+        db.update(TABLE_RECORDS, values, KEY_ACCOUNT_ID + " = ?", new String[]{String.valueOf(id)});
+        db.delete(TABLE_ACCOUNTS, KEY_ID + " = ?", new String[]{String.valueOf(id)});
+    }
+
+    public void updateAccount(Account account) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_ACC_NAME, account.getName());
+        values.put(KEY_ACC_ICON, account.getIcon());
+        values.put(KEY_ACC_TYPE, account.getType());
+        values.put(KEY_ACC_INIT_BALANCE, account.getInitBalance());
+        values.put(KEY_ACC_REMARK, account.getRemark());
+        db.update(TABLE_ACCOUNTS, values, KEY_ID + " = ?", new String[]{String.valueOf(account.getId())});
+    }
+
     public List<Category> getCategories(int type) {
         List<Category> categories = new ArrayList<>();
         String selectQuery = "SELECT * FROM " + TABLE_CATEGORIES + " WHERE " + KEY_CAT_TYPE + " = ? ORDER BY " + KEY_ID;
@@ -172,10 +284,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(KEY_AMOUNT, record.getAmount());
         values.put(KEY_CATEGORY_ID, record.getCategoryId());
         values.put(KEY_PROJECT_ID, record.getProjectId());
+        values.put(KEY_ACCOUNT_ID, record.getAccountId());
         values.put(KEY_DATE, record.getDate());
         values.put(KEY_TIMESTAMP, record.getTimestamp());
         values.put(KEY_REMARK, record.getRemark());
-        return db.insert(TABLE_RECORDS, null, values);
+        values.put(KEY_TAGS, record.getTags());
+        long id = db.insert(TABLE_RECORDS, null, values);
+
+        // 更新账户余额
+        if (record.getAccountId() > 0) {
+            double delta = record.getType() == Record.TYPE_EXPENSE ? -record.getAmount() : record.getAmount();
+            updateAccountBalance(record.getAccountId(), delta);
+        }
+        return id;
+    }
+
+    public void transfer(long fromAccountId, long toAccountId, double amount) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL("UPDATE " + TABLE_ACCOUNTS + " SET " + KEY_ACC_BALANCE + " = " + KEY_ACC_BALANCE + " - ? WHERE " + KEY_ID + " = ?",
+                new Object[]{amount, fromAccountId});
+        db.execSQL("UPDATE " + TABLE_ACCOUNTS + " SET " + KEY_ACC_BALANCE + " = " + KEY_ACC_BALANCE + " + ? WHERE " + KEY_ID + " = ?",
+                new Object[]{amount, toAccountId});
     }
 
     private Record cursorToRecord(Cursor cursor) {
@@ -185,19 +314,32 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         record.setAmount(cursor.getDouble(2));
         record.setCategoryId(cursor.getLong(3));
         record.setProjectId(cursor.getLong(4));
-        record.setDate(cursor.getString(5));
-        record.setTimestamp(cursor.getLong(6));
-        record.setRemark(cursor.getString(7));
+        record.setAccountId(cursor.getLong(5));
+        record.setDate(cursor.getString(6));
+        record.setTimestamp(cursor.getLong(7));
+        record.setRemark(cursor.getString(8));
+        record.setTags(cursor.getString(9));
         return record;
+    }
+
+    private void fillJoinFields(Record record, Cursor cursor) {
+        record.setCategoryName(cursor.getString(10));
+        record.setCategoryIcon(cursor.getString(11));
+        record.setCategoryColor(cursor.getInt(12));
+        record.setProjectName(cursor.getString(13));
+        record.setAccountName(cursor.getString(14));
+        record.setAccountIcon(cursor.getString(15));
     }
 
     public List<Record> getAllRecords() {
         List<Record> records = new ArrayList<>();
         String selectQuery = "SELECT r.*, c." + KEY_CAT_NAME + ", c." + KEY_CAT_ICON + ", c." + KEY_CAT_COLOR
                 + ", p." + KEY_PROJ_NAME
+                + ", a." + KEY_ACC_NAME + ", a." + KEY_ACC_ICON
                 + " FROM " + TABLE_RECORDS + " r"
                 + " LEFT JOIN " + TABLE_CATEGORIES + " c ON r." + KEY_CATEGORY_ID + " = c." + KEY_ID
                 + " LEFT JOIN " + TABLE_PROJECTS + " p ON r." + KEY_PROJECT_ID + " = p." + KEY_ID
+                + " LEFT JOIN " + TABLE_ACCOUNTS + " a ON r." + KEY_ACCOUNT_ID + " = a." + KEY_ID
                 + " ORDER BY r." + KEY_TIMESTAMP + " DESC";
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(selectQuery, null);
@@ -205,10 +347,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (cursor.moveToFirst()) {
             do {
                 Record record = cursorToRecord(cursor);
-                record.setCategoryName(cursor.getString(8));
-                record.setCategoryIcon(cursor.getString(9));
-                record.setCategoryColor(cursor.getInt(10));
-                record.setProjectName(cursor.getString(11));
+                fillJoinFields(record, cursor);
                 records.add(record);
             } while (cursor.moveToNext());
         }
@@ -220,9 +359,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         List<Record> records = new ArrayList<>();
         String selectQuery = "SELECT r.*, c." + KEY_CAT_NAME + ", c." + KEY_CAT_ICON + ", c." + KEY_CAT_COLOR
                 + ", p." + KEY_PROJ_NAME
+                + ", a." + KEY_ACC_NAME + ", a." + KEY_ACC_ICON
                 + " FROM " + TABLE_RECORDS + " r"
                 + " LEFT JOIN " + TABLE_CATEGORIES + " c ON r." + KEY_CATEGORY_ID + " = c." + KEY_ID
                 + " LEFT JOIN " + TABLE_PROJECTS + " p ON r." + KEY_PROJECT_ID + " = p." + KEY_ID
+                + " LEFT JOIN " + TABLE_ACCOUNTS + " a ON r." + KEY_ACCOUNT_ID + " = a." + KEY_ID
                 + " WHERE r." + KEY_DATE + " LIKE ?"
                 + " ORDER BY r." + KEY_TIMESTAMP + " DESC";
         SQLiteDatabase db = this.getReadableDatabase();
@@ -231,10 +372,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (cursor.moveToFirst()) {
             do {
                 Record record = cursorToRecord(cursor);
-                record.setCategoryName(cursor.getString(8));
-                record.setCategoryIcon(cursor.getString(9));
-                record.setCategoryColor(cursor.getInt(10));
-                record.setProjectName(cursor.getString(11));
+                fillJoinFields(record, cursor);
                 records.add(record);
             } while (cursor.moveToNext());
         }
@@ -246,9 +384,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         List<Record> records = new ArrayList<>();
         String selectQuery = "SELECT r.*, c." + KEY_CAT_NAME + ", c." + KEY_CAT_ICON + ", c." + KEY_CAT_COLOR
                 + ", p." + KEY_PROJ_NAME
+                + ", a." + KEY_ACC_NAME + ", a." + KEY_ACC_ICON
                 + " FROM " + TABLE_RECORDS + " r"
                 + " LEFT JOIN " + TABLE_CATEGORIES + " c ON r." + KEY_CATEGORY_ID + " = c." + KEY_ID
                 + " LEFT JOIN " + TABLE_PROJECTS + " p ON r." + KEY_PROJECT_ID + " = p." + KEY_ID
+                + " LEFT JOIN " + TABLE_ACCOUNTS + " a ON r." + KEY_ACCOUNT_ID + " = a." + KEY_ID
                 + " WHERE r." + KEY_PROJECT_ID + " = ?"
                 + " ORDER BY r." + KEY_TIMESTAMP + " DESC";
         SQLiteDatabase db = this.getReadableDatabase();
@@ -257,10 +397,35 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (cursor.moveToFirst()) {
             do {
                 Record record = cursorToRecord(cursor);
-                record.setCategoryName(cursor.getString(8));
-                record.setCategoryIcon(cursor.getString(9));
-                record.setCategoryColor(cursor.getInt(10));
-                record.setProjectName(cursor.getString(11));
+                fillJoinFields(record, cursor);
+                records.add(record);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return records;
+    }
+
+    public List<Record> searchRecords(String keyword) {
+        List<Record> records = new ArrayList<>();
+        String selectQuery = "SELECT r.*, c." + KEY_CAT_NAME + ", c." + KEY_CAT_ICON + ", c." + KEY_CAT_COLOR
+                + ", p." + KEY_PROJ_NAME
+                + ", a." + KEY_ACC_NAME + ", a." + KEY_ACC_ICON
+                + " FROM " + TABLE_RECORDS + " r"
+                + " LEFT JOIN " + TABLE_CATEGORIES + " c ON r." + KEY_CATEGORY_ID + " = c." + KEY_ID
+                + " LEFT JOIN " + TABLE_PROJECTS + " p ON r." + KEY_PROJECT_ID + " = p." + KEY_ID
+                + " LEFT JOIN " + TABLE_ACCOUNTS + " a ON r." + KEY_ACCOUNT_ID + " = a." + KEY_ID
+                + " WHERE r." + KEY_REMARK + " LIKE ? OR r." + KEY_TAGS + " LIKE ?"
+                + " OR c." + KEY_CAT_NAME + " LIKE ? OR p." + KEY_PROJ_NAME + " LIKE ?"
+                + " OR a." + KEY_ACC_NAME + " LIKE ?"
+                + " ORDER BY r." + KEY_TIMESTAMP + " DESC";
+        String like = "%" + keyword + "%";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, new String[]{like, like, like, like, like});
+
+        if (cursor.moveToFirst()) {
+            do {
+                Record record = cursorToRecord(cursor);
+                fillJoinFields(record, cursor);
                 records.add(record);
             } while (cursor.moveToNext());
         }
@@ -370,6 +535,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public void deleteRecord(long id) {
         SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.rawQuery("SELECT " + KEY_TYPE + "," + KEY_AMOUNT + "," + KEY_ACCOUNT_ID + " FROM " + TABLE_RECORDS + " WHERE " + KEY_ID + " = ?", new String[]{String.valueOf(id)});
+        if (cursor.moveToFirst()) {
+            int type = cursor.getInt(0);
+            double amount = cursor.getDouble(1);
+            long accountId = cursor.getLong(2);
+            if (accountId > 0) {
+                double delta = type == Record.TYPE_EXPENSE ? amount : -amount;
+                updateAccountBalance(accountId, delta);
+            }
+        }
+        cursor.close();
         db.delete(TABLE_RECORDS, KEY_ID + " = ?", new String[]{String.valueOf(id)});
     }
 
@@ -471,6 +647,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     + KEY_BUDGET_MONTH + " TEXT UNIQUE NOT NULL, "
                     + KEY_BUDGET_AMOUNT + " REAL NOT NULL)";
             db.execSQL(createBudgetsTable);
+        }
+        if (oldVersion < 3) {
+            db.execSQL("ALTER TABLE " + TABLE_RECORDS + " ADD COLUMN " + KEY_ACCOUNT_ID + " INTEGER DEFAULT 1");
+            db.execSQL("ALTER TABLE " + TABLE_RECORDS + " ADD COLUMN " + KEY_TAGS + " TEXT");
+            String createAccountsTable = "CREATE TABLE IF NOT EXISTS " + TABLE_ACCOUNTS + " ("
+                    + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    + KEY_ACC_NAME + " TEXT NOT NULL, "
+                    + KEY_ACC_ICON + " TEXT NOT NULL, "
+                    + KEY_ACC_TYPE + " INTEGER NOT NULL, "
+                    + KEY_ACC_INIT_BALANCE + " REAL NOT NULL DEFAULT 0, "
+                    + KEY_ACC_BALANCE + " REAL NOT NULL DEFAULT 0, "
+                    + KEY_ACC_REMARK + " TEXT)";
+            db.execSQL(createAccountsTable);
+            initDefaultAccounts(db);
         }
     }
 

@@ -55,4 +55,9 @@ public class MainActivity extends AppCompatActivity {
             ((RecordsFragment) fragment).refreshData();
         }
     }
+
+    public void switchToStats() {
+        BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
+        bottomNav.setSelectedItemId(R.id.nav_stats);
+    }
 }

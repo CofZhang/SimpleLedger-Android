@@ -10,9 +10,13 @@ public class Record {
     private int categoryColor;
     private long projectId;
     private String projectName;
+    private long accountId;
+    private String accountName;
+    private String accountIcon;
     private String date;
     private long timestamp;
     private String remark;
+    private String tags;
 
     public static final int TYPE_EXPENSE = 0;
     public static final int TYPE_INCOME = 1;
@@ -46,6 +50,15 @@ public class Record {
     public String getProjectName() { return projectName; }
     public void setProjectName(String projectName) { this.projectName = projectName; }
 
+    public long getAccountId() { return accountId; }
+    public void setAccountId(long accountId) { this.accountId = accountId; }
+
+    public String getAccountName() { return accountName; }
+    public void setAccountName(String accountName) { this.accountName = accountName; }
+
+    public String getAccountIcon() { return accountIcon; }
+    public void setAccountIcon(String accountIcon) { this.accountIcon = accountIcon; }
+
     public String getDate() { return date; }
     public void setDate(String date) { this.date = date; }
 
@@ -54,4 +67,8 @@ public class Record {
 
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
+
+    public String getTags() { return tags; }
+    public void setTags(String tags) { this.tags = tags; }
 }
+

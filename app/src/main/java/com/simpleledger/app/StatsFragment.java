@@ -9,6 +9,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -109,9 +110,40 @@ public class StatsFragment extends Fragment {
             else currentDate.add(Calendar.YEAR, 1);
             updateData();
         });
+        // 点击周期标签快速跳转到指定日期
+        tvPeriodLabel.setOnClickListener(v -> showPeriodPicker());
 
         updateData();
         return view;
+    }
+
+    private void showPeriodPicker() {
+        if (currentPeriod == 2) {
+            // 年份选择：用 NumberPicker
+            View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_year_picker, null);
+            android.widget.NumberPicker npYear = dialogView.findViewById(R.id.npYear);
+            int curYear = currentDate.get(Calendar.YEAR);
+            npYear.setMinValue(2000);
+            npYear.setMaxValue(2100);
+            npYear.setValue(curYear);
+            new AlertDialog.Builder(getContext())
+                    .setTitle("选择年份")
+                    .setView(dialogView)
+                    .setPositiveButton(R.string.confirm, (d, w) -> {
+                        currentDate.set(Calendar.YEAR, npYear.getValue());
+                        updateData();
+                    })
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+        } else {
+            // 周/月选择：用 DatePicker
+            new android.app.DatePickerDialog(getContext(), (v, year, month, dayOfMonth) -> {
+                currentDate.set(Calendar.YEAR, year);
+                currentDate.set(Calendar.MONTH, month);
+                currentDate.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                updateData();
+            }, currentDate.get(Calendar.YEAR), currentDate.get(Calendar.MONTH), currentDate.get(Calendar.DAY_OF_MONTH)).show();
+        }
     }
 
     private void updateData() {

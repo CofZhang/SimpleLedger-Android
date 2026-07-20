@@ -29,13 +29,16 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
     private Category selectedCategory;
     private long selectedProjectId = 0;
     private String selectedProjectName = null;
+    private long selectedAccountId = 1;
+    private String selectedAccountName = "现金";
     private Calendar selectedDate;
     private List<Category> categories;
     private List<Project> projects;
+    private List<Account> accounts;
     private CategoryAdapter categoryAdapter;
 
-    private EditText etAmount, etRemark;
-    private TextView tvDate, tvProject;
+    private EditText etAmount, etRemark, etTags;
+    private TextView tvDate, tvProject, tvAccount;
     private TabLayout tabType;
 
     @Override
@@ -45,15 +48,19 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
         dbHelper = new DatabaseHelper(getContext());
         categories = new ArrayList<>();
         projects = new ArrayList<>();
+        accounts = new ArrayList<>();
         selectedDate = Calendar.getInstance();
 
         etAmount = view.findViewById(R.id.etAmount);
         etRemark = view.findViewById(R.id.etRemark);
+        etTags = view.findViewById(R.id.etTags);
         tvDate = view.findViewById(R.id.tvDate);
         tvProject = view.findViewById(R.id.tvProject);
+        tvAccount = view.findViewById(R.id.tvAccount);
         tabType = view.findViewById(R.id.tabType);
         RecyclerView rvCategories = view.findViewById(R.id.rvCategories);
         ImageButton btnSelectProject = view.findViewById(R.id.btnSelectProject);
+        ImageButton btnSelectAccount = view.findViewById(R.id.btnSelectAccount);
 
         rvCategories.setLayoutManager(new GridLayoutManager(getContext(), 4));
         categoryAdapter = new CategoryAdapter(categories, this);
@@ -85,6 +92,16 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
 
         tvProject.setOnClickListener(v -> showProjectPicker());
         btnSelectProject.setOnClickListener(v -> showProjectPicker());
+        tvAccount.setOnClickListener(v -> showAccountPicker());
+        btnSelectAccount.setOnClickListener(v -> showAccountPicker());
+
+        // 初始化默认账户
+        accounts = dbHelper.getAllAccounts();
+        if (!accounts.isEmpty()) {
+            selectedAccountId = accounts.get(0).getId();
+            selectedAccountName = accounts.get(0).getName();
+            tvAccount.setText(selectedAccountName);
+        }
 
         loadCategories();
         return view;
@@ -115,6 +132,34 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
                         selectedProjectName = p.getName();
                         tvProject.setText(p.getName());
                     }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void showAccountPicker() {
+        accounts.clear();
+        accounts.addAll(dbHelper.getAllAccounts());
+
+        if (accounts.isEmpty()) {
+            Toast.makeText(getContext(), "请先添加账户", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<String> accountDisplay = new ArrayList<>();
+        for (Account a : accounts) {
+            accountDisplay.add(a.getIcon() + " " + a.getName() + " (余额¥" + String.format("%.2f", a.getBalance()) + ")");
+        }
+
+        String[] namesArray = accountDisplay.toArray(new String[0]);
+
+        new AlertDialog.Builder(getContext())
+                .setTitle("选择账户")
+                .setItems(namesArray, (dialog, which) -> {
+                    Account a = accounts.get(which);
+                    selectedAccountId = a.getId();
+                    selectedAccountName = a.getName();
+                    tvAccount.setText(a.getIcon() + " " + a.getName());
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
@@ -176,7 +221,9 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
         record.setAmount(amount);
         record.setCategoryId(selectedCategory.getId());
         record.setProjectId(selectedProjectId);
+        record.setAccountId(selectedAccountId);
         record.setRemark(etRemark.getText().toString().trim());
+        record.setTags(etTags.getText().toString().trim());
         record.setTimestamp(selectedDate.getTimeInMillis());
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
@@ -187,6 +234,7 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
 
         etAmount.setText("");
         etRemark.setText("");
+        etTags.setText("");
         selectedProjectId = 0;
         selectedProjectName = null;
         tvProject.setText(R.string.no_project);

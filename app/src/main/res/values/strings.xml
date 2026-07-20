@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">简单记账</string>
+    <string name="app_name">咖啡记账</string>
     <string name="tab_records">明细</string>
     <string name="tab_add">记账</string>
     <string name="tab_stats">统计</string>
