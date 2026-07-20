@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 凸起圆形玻璃按钮（中间记账按钮） -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
-    <solid android:color="@color/colorPrimary" />
-    <stroke android:width="2dp" android:color="@color/white" />
+    <solid android:color="@color/colorPrimary"/>
+    <stroke android:width="2dp" android:color="#FFFFFF"/>
 </shape>

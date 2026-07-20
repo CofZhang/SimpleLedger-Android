@@ -4,23 +4,25 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background">
+    android:background="@android:color/transparent">
 
+    <!-- 1. 顶部导航栏（全宽矩形玻璃条，高度56dp，无圆角） -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:background="@drawable/bg_gradient_header"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="16dp">
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp">
 
         <ImageButton
             android:id="@+id/btnMore"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_more"
-            app:tint="@color/text_primary" />
+            android:tint="@color/text_primary" />
 
         <TextView
             android:layout_width="0dp"
@@ -29,91 +31,98 @@
             android:gravity="center"
             android:text="@string/app_name"
             android:textColor="@color/text_primary"
-            android:textSize="22sp"
+            android:textSize="18sp"
             android:textStyle="bold" />
 
         <ImageButton
             android:id="@+id/btnBudget"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_today"
-            app:tint="@color/text_primary" />
+            android:src="@android:drawable/ic_menu_my_calendar"
+            android:tint="@color/text_primary" />
     </LinearLayout>
 
+    <!-- 2. 搜索栏（玻璃胶囊） -->
     <EditText
         android:id="@+id/etSearch"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="4dp"
-        android:background="@drawable/bg_glass_card"
+        android:layout_height="44dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_glass_capsule"
         android:drawableStart="@android:drawable/ic_menu_search"
         android:drawablePadding="8dp"
         android:hint="搜索：金额、分类、账户、标签、备注"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
         android:singleLine="true"
         android:textColor="@color/text_primary"
         android:textColorHint="@color/text_hint"
         android:textSize="13sp" />
 
+    <!-- 3. 月份切换栏（玻璃胶囊条） -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="12dp"
         android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="8dp">
+        android:orientation="horizontal">
 
         <ImageButton
             android:id="@+id/btnPrevMonth"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_media_previous"
-            app:tint="@color/text_secondary" />
+            android:tint="@color/text_secondary" />
 
         <TextView
             android:id="@+id/tvMonth"
             android:layout_width="0dp"
-            android:layout_height="36dp"
+            android:layout_height="40dp"
             android:layout_weight="1"
-            android:background="@drawable/bg_month_selector"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_glass_capsule"
             android:gravity="center"
             android:text="2026年7月"
             android:textColor="@color/text_primary"
-            android:textSize="16sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <ImageButton
             android:id="@+id/btnNextMonth"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_media_next"
-            app:tint="@color/text_secondary" />
+            android:tint="@color/text_secondary" />
 
         <ImageButton
             android:id="@+id/btnCalendar"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:layout_marginStart="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_my_calendar"
-            app:tint="@color/text_secondary" />
+            android:src="@android:drawable/ic_menu_today"
+            android:tint="@color/text_secondary" />
     </LinearLayout>
 
+    <!-- 4. 收支结余大玻璃卡片 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="16dp"
         android:background="@drawable/bg_glass_card"
         android:orientation="horizontal"
-        android:padding="16dp">
+        android:padding="20dp"
+        android:elevation="6dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -133,17 +142,18 @@
                 android:id="@+id/tvMonthExpense"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="6dp"
                 android:text="¥0.00"
                 android:textColor="@color/expense_color"
-                android:textSize="18sp"
+                android:textSize="20sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
         <View
             android:layout_width="1dp"
-            android:layout_height="40dp"
-            android:background="@color/divider" />
+            android:layout_height="48dp"
+            android:layout_gravity="center_vertical"
+            android:background="@color/divider_glass" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -163,17 +173,18 @@
                 android:id="@+id/tvMonthIncome"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="6dp"
                 android:text="¥0.00"
                 android:textColor="@color/income_color"
-                android:textSize="18sp"
+                android:textSize="20sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
         <View
             android:layout_width="1dp"
-            android:layout_height="40dp"
-            android:background="@color/divider" />
+            android:layout_height="48dp"
+            android:layout_gravity="center_vertical"
+            android:background="@color/divider_glass" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -193,54 +204,60 @@
                 android:id="@+id/tvBalance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="6dp"
                 android:text="¥0.00"
-                android:textColor="@color/text_primary"
-                android:textSize="18sp"
+                android:textColor="@color/balance_color"
+                android:textSize="20sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
 
+    <!-- 预算进度条 -->
     <ProgressBar
         android:id="@+id/progressBudget"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
         android:layout_height="6dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="12dp"
         android:max="100"
-        android:progressTint="@color/colorAccent"
+        android:progressTint="@color/colorPrimary"
         android:visibility="gone" />
 
     <TextView
         android:id="@+id/tvBudgetInfo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="4dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="4dp"
         android:textColor="@color/text_secondary"
         android:textSize="11sp"
         android:visibility="gone" />
 
+    <!-- 5. 记录列表/空白状态 -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:layout_marginTop="12dp">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvRecords"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:padding="8dp" />
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="100dp" />
 
         <TextView
             android:id="@+id/tvEmpty"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:text="@string/no_records"
+            android:text="暂无记录，点击中间按钮记一笔"
             android:textColor="@color/text_hint"
             android:textSize="14sp"
             android:visibility="gone" />

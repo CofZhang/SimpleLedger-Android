@@ -1,12 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 主色调：莫兰迪暖色系 -->
-    <color name="colorPrimary">#D6C7B2</color>
-    <color name="colorPrimaryDark">#C4B49A</color>
-    <color name="colorPrimaryLight">#E8DDD0</color>
-    <color name="colorAccent">#C4756B</color>
+    <!-- 4.0 液态玻璃暖米色主色调（保持暖米色体系） -->
+    <color name="colorPrimary">#C9B8A0</color>
+    <color name="colorPrimaryDark">#B5A48A</color>
+    <color name="colorPrimaryLight">#E0D5C2</color>
+    <color name="colorAccent">#C9B8A0</color>
 
-    <!-- 莫兰迪色系 -->
+    <!-- 暖米色背景体系 -->
+    <color name="background">#F8F3ED</color>
+    <color name="background_warm">#F8F3ED</color>
+    <color name="background_dark">#EDE4D6</color>
+
+    <!-- 玻璃拟态（iOS 液态玻璃） -->
+    <color name="glass_bg">#38FFFFFF</color>
+    <color name="glass_bg_strong">#59FFFFFF</color>
+    <color name="glass_border">#59FFFFFF</color>
+    <color name="glass_nav_bg">#40C9B8A0</color>
+    <color name="glass_shadow">#1A8B7D6B</color>
+
+    <!-- 文字色（深棕灰体系） -->
+    <color name="text_primary">#3D352C</color>
+    <color name="text_secondary">#8B7D6B</color>
+    <color name="text_hint">#B8AC9A</color>
+    <color name="text_light">#FFFFFF</color>
+
+    <!-- 功能色（柔和） -->
+    <color name="expense_color">#D4756A</color>
+    <color name="income_color">#7BA678</color>
+    <color name="balance_color">#8AA4B8</color>
+    <color name="warning_color">#D9A85E</color>
+
+    <!-- 卡片 -->
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_glass">#38FFFFFF</color>
+    <color name="card_overlay">#E6F5F1EB</color>
+
+    <!-- 分割线与阴影 -->
+    <color name="divider">#E8E0D5</color>
+    <color name="divider_glass">#33FFFFFF</color>
+    <color name="shadow_light">#E0D8CC</color>
+    <color name="shadow_dark">#B8AFA0</color>
+
+    <!-- 莫兰迪色系（分类用，低饱和） -->
     <color name="morandi_beige">#D6C7B2</color>
     <color name="morandi_pink">#D4B5A8</color>
     <color name="morandi_blue">#A8B8C4</color>
@@ -22,33 +57,6 @@
     <color name="earth_olive">#8B8762</color>
     <color name="earth_sand">#D4BE98</color>
 
-    <!-- 收支颜色（柔和版） -->
-    <color name="expense_color">#C4756B</color>
-    <color name="income_color">#8BA888</color>
-
-    <!-- 背景与卡片 -->
-    <color name="white">#FFFFFF</color>
-    <color name="background">#F5F1EB</color>
-    <color name="background_warm">#F7F3ED</color>
-    <color name="card_background">#FFFFFF</color>
-    <color name="card_glass">#CCFFFFFF</color>
-    <color name="card_overlay">#E6F5F1EB</color>
-
-    <!-- 文本 -->
-    <color name="text_primary">#4A4A4A</color>
-    <color name="text_secondary">#9B9B9B</color>
-    <color name="text_hint">#BDBDBD</color>
-    <color name="text_light">#FFFFFF</color>
-
-    <!-- 分割线与阴影 -->
-    <color name="divider">#E8E0D5</color>
-    <color name="shadow_light">#E0D8CC</color>
-    <color name="shadow_dark">#B8AFA0</color>
-
-    <!-- 玻璃拟态 -->
-    <color name="glass_bg">#99FFFFFF</color>
-    <color name="glass_border">#CCFFFFFF</color>
-
     <!-- 新拟态 -->
     <color name="neu_bg">#EDE7DD</color>
     <color name="neu_light">#F5F1EB</color>
@@ -57,16 +65,24 @@
     <!-- 渐变 -->
     <color name="gradient_start">#E8DDD0</color>
     <color name="gradient_end">#D6C7B2</color>
-    <color name="gradient_expense_start">#D4A89E</color>
-    <color name="gradient_expense_end">#C4756B</color>
-    <color name="gradient_income_start">#A8C4A0</color>
-    <color name="gradient_income_end">#8BA888</color>
+    <color name="gradient_expense_start">#E09A8E</color>
+    <color name="gradient_expense_end">#D4756A</color>
+    <color name="gradient_income_start">#9EC89C</color>
+    <color name="gradient_income_end">#7BA678</color>
 
     <!-- 日历 -->
-    <color name="calendar_today">#D6C7B2</color>
+    <color name="calendar_today">#C9B8A0</color>
     <color name="calendar_has_record">#E8DDD0</color>
-    <color name="calendar_selected">#C4756B</color>
-    <color name="calendar_weekday">#9B9B9B</color>
-    <color name="calendar_day_normal">#4A4A4A</color>
-    <color name="calendar_day_other">#D0D0D0</color>
+    <color name="calendar_selected">#D4756A</color>
+    <color name="calendar_weekday">#8B7D6B</color>
+    <color name="calendar_day_normal">#3D352C</color>
+    <color name="calendar_day_other">#D0C8BC</color>
+
+    <!-- 背景光斑 -->
+    <color name="blob_cream">#E8DDD0</color>
+    <color name="blob_khaki">#D4C9A8</color>
+    <color name="blob_taupe">#C9B8A0</color>
+
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
 </resources>

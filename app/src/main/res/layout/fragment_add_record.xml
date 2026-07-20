@@ -4,15 +4,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background">
+    android:background="@android:color/transparent">
 
+    <!-- 1. 顶部导航栏（全宽矩形玻璃条，56dp，标题左对齐，右保存按钮） -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:background="@drawable/bg_gradient_header"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="16dp">
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp">
 
         <TextView
             android:layout_width="0dp"
@@ -20,62 +22,75 @@
             android:layout_weight="1"
             android:text="@string/add_record"
             android:textColor="@color/text_primary"
-            android:textSize="22sp"
+            android:textSize="18sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/btnSave"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_month_selector"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_segmented_selected"
+            android:gravity="center"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
             android:text="@string/save"
-            android:textColor="@color/text_primary"
-            android:textSize="16sp"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabType"
+    <!-- 2. 支出/收入分段控制器 -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/bg_glass_card"
-        app:tabIndicatorColor="@color/colorAccent"
-        app:tabIndicatorHeight="3dp"
-        app:tabSelectedTextColor="@color/colorAccent"
-        app:tabTextColor="@color/text_secondary" />
+        android:layout_height="36dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_segmented">
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabType"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:tabIndicatorAnimationMode="elastic"
+            app:tabIndicatorColor="@android:color/transparent"
+            app:tabIndicatorHeight="0dp"
+            app:tabRippleColor="@android:color/transparent"
+            app:tabSelectedTextColor="@color/text_primary"
+            app:tabTextColor="@color/text_secondary" />
+    </FrameLayout>
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="true">
+        android:layout_marginTop="16dp"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:paddingBottom="100dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp">
 
+            <!-- 3. 金额输入区（淡色玻璃卡片） -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_glass_card"
+                android:elevation="6dp"
                 android:orientation="vertical"
-                android:padding="24dp">
+                android:padding="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/amount"
                     android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:textSize="14sp" />
 
                 <EditText
                     android:id="@+id/etAmount"
@@ -87,10 +102,11 @@
                     android:inputType="numberDecimal"
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/text_hint"
-                    android:textSize="36sp"
+                    android:textSize="32sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
+            <!-- 4. 分类网格 -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -98,15 +114,16 @@
                 android:layout_marginBottom="8dp"
                 android:text="@string/category"
                 android:textColor="@color/text_secondary"
-                android:textSize="14sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_glass_card"
+                android:elevation="6dp"
                 android:orientation="vertical"
-                android:padding="8dp">
+                android:padding="12dp">
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvCategories"
@@ -115,11 +132,13 @@
                     android:nestedScrollingEnabled="false" />
             </LinearLayout>
 
+            <!-- 项目 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:background="@drawable/bg_glass_card"
+                android:elevation="6dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="16dp">
@@ -149,14 +168,16 @@
                     android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_menu_add"
-                    app:tint="@color/colorAccent" />
+                    android:tint="@color/colorPrimary" />
             </LinearLayout>
 
+            <!-- 账户 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_glass_card"
+                android:elevation="6dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="16dp">
@@ -186,14 +207,16 @@
                     android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_menu_add"
-                    app:tint="@color/colorAccent" />
+                    android:tint="@color/colorPrimary" />
             </LinearLayout>
 
+            <!-- 日期 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_glass_card"
+                android:elevation="6dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="16dp">
@@ -216,11 +239,13 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
+            <!-- 备注 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_glass_card"
+                android:elevation="6dp"
                 android:orientation="vertical"
                 android:padding="16dp">
 
@@ -246,18 +271,21 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
+            <!-- 标签 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
                 android:background="@drawable/bg_glass_card"
+                android:elevation="6dp"
                 android:orientation="vertical"
                 android:padding="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="标签（用逗号分隔，如：朋友聚餐,生日礼物）"
+                    android:text="标签（逗号分隔）"
                     android:textColor="@color/text_secondary"
                     android:textSize="14sp" />
 
@@ -267,7 +295,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:background="@null"
-                    android:hint="添加标签"
+                    android:hint="如：朋友聚餐,生日礼物"
                     android:inputType="text"
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/text_hint"

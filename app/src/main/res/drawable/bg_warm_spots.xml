@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 暖米色背景 + 柔和浅棕光斑（layer-list 模拟） -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 底色 -->
+    <item android:drawable="@color/background"/>
+    <!-- 光斑1：左上奶茶棕 -->
+    <item android:gravity="top|start"
+        android:width="280dp" android:height="280dp">
+        <shape android:shape="oval">
+            <solid android:color="#33E8DDD0"/>
+        </shape>
+    </item>
+    <!-- 光斑2：右中浅卡其 -->
+    <item android:gravity="center|end"
+        android:width="240dp" android:height="240dp">
+        <shape android:shape="oval">
+            <solid android:color="#2AD4C9A8"/>
+        </shape>
+    </item>
+    <!-- 光斑3：左下奶茶棕 -->
+    <item android:gravity="bottom|start"
+        android:width="200dp" android:height="200dp">
+        <shape android:shape="oval">
+            <solid android:color="#26C9B8A0"/>
+        </shape>
+    </item>
+</layer-list>
