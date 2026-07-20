@@ -4,7 +4,6 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -39,19 +38,18 @@ public class CategoryStatAdapter extends RecyclerView.Adapter<CategoryStatAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         DatabaseHelper.CategoryStat stat = stats.get(position);
-        holder.tvName.setText(stat.getCategoryName());
-        holder.tvIcon.setText(stat.getCategoryIcon() != null ? stat.getCategoryIcon() : "📦");
+        holder.tvCategoryName.setText(stat.getCategoryName());
+        holder.tvCategoryIcon.setText(stat.getCategoryIcon() != null ? stat.getCategoryIcon() : "📦");
         
-        GradientDrawable bg = (GradientDrawable) holder.tvIcon.getBackground();
+        GradientDrawable bg = (GradientDrawable) holder.tvCategoryIcon.getBackground();
         if (bg != null) {
             bg.setColor(stat.getCategoryColor());
         }
 
-        holder.tvAmount.setText(String.format("¥%.2f", stat.getTotal()));
+        holder.tvTotal.setText(String.format("¥%.2f", stat.getTotal()));
         
         double percent = totalExpense > 0 ? (stat.getTotal() / totalExpense * 100) : 0;
-        holder.tvPercent.setText(String.format("%.1f%%", percent));
-        holder.progressBar.setProgress((int) percent);
+        holder.tvPercentage.setText(String.format("%.1f%%", percent));
     }
 
     @Override
@@ -66,16 +64,14 @@ public class CategoryStatAdapter extends RecyclerView.Adapter<CategoryStatAdapte
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvIcon, tvName, tvAmount, tvPercent;
-        ProgressBar progressBar;
+        TextView tvCategoryIcon, tvCategoryName, tvTotal, tvPercentage;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvIcon = itemView.findViewById(R.id.tvIcon);
-            tvName = itemView.findViewById(R.id.tvName);
-            tvAmount = itemView.findViewById(R.id.tvAmount);
-            tvPercent = itemView.findViewById(R.id.tvPercent);
-            progressBar = itemView.findViewById(R.id.progressBar);
+            tvCategoryIcon = itemView.findViewById(R.id.tvCategoryIcon);
+            tvCategoryName = itemView.findViewById(R.id.tvCategoryName);
+            tvTotal = itemView.findViewById(R.id.tvTotal);
+            tvPercentage = itemView.findViewById(R.id.tvPercentage);
         }
     }
 }

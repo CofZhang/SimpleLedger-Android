@@ -2,19 +2,31 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
     android:gravity="center"
-    android:padding="8dp"
-    android:background="?attr/selectableItemBackground">
+    android:orientation="vertical"
+    android:padding="8dp">
 
-    <TextView
-        android:id="@+id/tvIcon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:gravity="center"
-        android:textSize="24sp"
-        android:background="@drawable/circle_bg"
-        android:textColor="@color/white"/>
+    <FrameLayout
+        android:layout_width="56dp"
+        android:layout_height="56dp">
+
+        <TextView
+            android:id="@+id/tvIcon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_category_normal"
+            android:gravity="center"
+            android:textColor="@color/white"
+            android:textSize="24sp" />
+
+        <View
+            android:id="@+id/viewSelected"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_category_selected"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <TextView
         android:id="@+id/tvName"
@@ -22,5 +34,6 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:textColor="@color/text_primary"
-        android:textSize="12sp"/>
+        android:textSize="12sp" />
+
 </LinearLayout>

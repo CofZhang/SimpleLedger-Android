@@ -49,10 +49,25 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
         Category category = categories.get(position);
         holder.tvName.setText(category.getName());
         holder.tvIcon.setText(category.getIcon() != null ? category.getIcon() : "📦");
-        GradientDrawable bg = (GradientDrawable) holder.tvIcon.getBackground();
-        bg.setColor(category.getColor());
 
-        float scale = selectedCategoryId == category.getId() ? 1.1f : 1.0f;
+        boolean isSelected = selectedCategoryId == category.getId();
+
+        if (isSelected) {
+            holder.viewSelected.setVisibility(View.VISIBLE);
+            holder.tvName.setTextColor(holder.itemView.getContext().getColor(R.color.colorAccent));
+            holder.tvName.setTypeface(holder.tvName.getTypeface(), android.graphics.Typeface.BOLD);
+        } else {
+            holder.viewSelected.setVisibility(View.GONE);
+            holder.tvName.setTextColor(holder.itemView.getContext().getColor(R.color.text_primary));
+            holder.tvName.setTypeface(holder.tvName.getTypeface(), android.graphics.Typeface.NORMAL);
+        }
+
+        GradientDrawable bg = (GradientDrawable) holder.tvIcon.getBackground();
+        if (bg != null) {
+            bg.setColor(category.getColor());
+        }
+
+        float scale = isSelected ? 1.1f : 1.0f;
         holder.itemView.setScaleX(scale);
         holder.itemView.setScaleY(scale);
 
@@ -84,11 +99,13 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvIcon, tvName;
+        View viewSelected;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvIcon = itemView.findViewById(R.id.tvIcon);
             tvName = itemView.findViewById(R.id.tvName);
+            viewSelected = itemView.findViewById(R.id.viewSelected);
         }
     }
 }

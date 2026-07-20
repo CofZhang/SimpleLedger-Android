@@ -16,6 +16,8 @@ public class ProjectDetailActivity extends AppCompatActivity {
     private String projectName;
     private RecordAdapter adapter;
     private List<Record> records;
+    private TextView tvProjectTotal;
+    private TextView tvRecordCount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,47 +35,38 @@ public class ProjectDetailActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        TextView tvTitle = findViewById(R.id.tvTitle);
         TextView tvProjectName = findViewById(R.id.tvProjectName);
         TextView tvProjectDesc = findViewById(R.id.tvProjectDesc);
-        TextView tvTotalExpense = findViewById(R.id.tvTotalExpense);
-        TextView tvRecordCount = findViewById(R.id.tvRecordCount);
-        RecyclerView rvRecords = findViewById(R.id.rvProjectRecords);
+        tvProjectTotal = findViewById(R.id.tvProjectTotal);
+        tvRecordCount = findViewById(R.id.tvRecordCount);
+        RecyclerView rvRecords = findViewById(R.id.rvRecords);
 
-        tvTitle.setText(projectName);
         tvProjectName.setText(projectName);
+        if (tvProjectDesc != null) {
+            tvProjectDesc.setVisibility(android.view.View.GONE);
+        }
 
         rvRecords.setLayoutManager(new LinearLayoutManager(this));
         adapter = new RecordAdapter(records);
         rvRecords.setAdapter(adapter);
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+    }
 
+    private void loadData() {
         double totalExpense = dbHelper.getProjectExpense(projectId);
         List<Record> projectRecords = dbHelper.getRecordsByProject(projectId);
         records.clear();
         records.addAll(projectRecords);
         adapter.updateData(records);
 
-        tvTotalExpense.setText(String.format("¥%.2f", totalExpense));
+        tvProjectTotal.setText(String.format("¥%.2f", totalExpense));
         tvRecordCount.setText(String.valueOf(projectRecords.size()));
-    }
-
-    private void loadData() {
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        List<Record> projectRecords = dbHelper.getRecordsByProject(projectId);
-        records.clear();
-        records.addAll(projectRecords);
-        adapter.updateData(records);
-
-        double totalExpense = dbHelper.getProjectExpense(projectId);
-        TextView tvTotalExpense = findViewById(R.id.tvTotalExpense);
-        TextView tvRecordCount = findViewById(R.id.tvRecordCount);
-        tvTotalExpense.setText(String.format("¥%.2f", totalExpense));
-        tvRecordCount.setText(String.valueOf(projectRecords.size()));
+        loadData();
     }
 }

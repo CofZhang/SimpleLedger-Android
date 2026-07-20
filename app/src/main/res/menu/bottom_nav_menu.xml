@@ -5,6 +5,10 @@
         android:icon="@android:drawable/ic_menu_agenda"
         android:title="@string/tab_records"/>
     <item
+        android:id="@+id/nav_add"
+        android:icon="@android:drawable/ic_menu_add"
+        android:title="@string/tab_add"/>
+    <item
         android:id="@+id/nav_stats"
         android:icon="@android:drawable/ic_menu_sort_by_size"
         android:title="@string/tab_stats"/>

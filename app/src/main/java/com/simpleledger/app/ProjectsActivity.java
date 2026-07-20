@@ -60,7 +60,7 @@ public class ProjectsActivity extends AppCompatActivity {
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
-        FloatingActionButton fabAdd = findViewById(R.id.fabAddProject);
+        FloatingActionButton fabAdd = findViewById(R.id.fabAdd);
         fabAdd.setOnClickListener(v -> showAddProjectDialog());
     }
 

@@ -1,6 +1,5 @@
 package com.simpleledger.app;
 
-import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -49,8 +48,7 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.ViewHolder
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Record record = records.get(position);
         holder.tvCategory.setText(record.getCategoryName());
-        holder.tvDate.setText(record.getDate());
-        
+
         if (record.getRemark() != null && !record.getRemark().isEmpty()) {
             holder.tvRemark.setText(record.getRemark());
             holder.tvRemark.setVisibility(View.VISIBLE);
@@ -63,6 +61,12 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.ViewHolder
             holder.tvProjectTag.setVisibility(View.VISIBLE);
         } else {
             holder.tvProjectTag.setVisibility(View.GONE);
+        }
+
+        if (record.getDate() != null && record.getDate().length() >= 10) {
+            holder.tvDate.setText(record.getDate().substring(5));
+        } else {
+            holder.tvDate.setText(record.getDate());
         }
 
         holder.tvCategoryIcon.setText(record.getCategoryIcon() != null ? record.getCategoryIcon() : "📦");

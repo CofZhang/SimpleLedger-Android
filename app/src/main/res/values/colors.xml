@@ -1,14 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#2196F3</color>
-    <color name="colorPrimaryDark">#1976D2</color>
-    <color name="colorAccent">#FF4081</color>
-    <color name="expense_color">#F44336</color>
-    <color name="income_color">#4CAF50</color>
+    <!-- 主色调：莫兰迪暖色系 -->
+    <color name="colorPrimary">#D6C7B2</color>
+    <color name="colorPrimaryDark">#C4B49A</color>
+    <color name="colorPrimaryLight">#E8DDD0</color>
+    <color name="colorAccent">#C4756B</color>
+
+    <!-- 莫兰迪色系 -->
+    <color name="morandi_beige">#D6C7B2</color>
+    <color name="morandi_pink">#D4B5A8</color>
+    <color name="morandi_blue">#A8B8C4</color>
+    <color name="morandi_green">#A8B5A0</color>
+    <color name="morandi_purple">#B5A8B4</color>
+    <color name="morandi_yellow">#D4C9A8</color>
+    <color name="morandi_brown">#B8A690</color>
+    <color name="morandi_gray">#B0B0B0</color>
+
+    <!-- 大地色系 -->
+    <color name="earth_taupe">#A89B8C</color>
+    <color name="earth_clay">#C4956B</color>
+    <color name="earth_olive">#8B8762</color>
+    <color name="earth_sand">#D4BE98</color>
+
+    <!-- 收支颜色（柔和版） -->
+    <color name="expense_color">#C4756B</color>
+    <color name="income_color">#8BA888</color>
+
+    <!-- 背景与卡片 -->
     <color name="white">#FFFFFF</color>
-    <color name="background">#F5F5F5</color>
-    <color name="text_primary">#212121</color>
-    <color name="text_secondary">#757575</color>
-    <color name="divider">#E0E0E0</color>
+    <color name="background">#F5F1EB</color>
+    <color name="background_warm">#F7F3ED</color>
     <color name="card_background">#FFFFFF</color>
+    <color name="card_glass">#CCFFFFFF</color>
+    <color name="card_overlay">#E6F5F1EB</color>
+
+    <!-- 文本 -->
+    <color name="text_primary">#4A4A4A</color>
+    <color name="text_secondary">#9B9B9B</color>
+    <color name="text_hint">#BDBDBD</color>
+    <color name="text_light">#FFFFFF</color>
+
+    <!-- 分割线与阴影 -->
+    <color name="divider">#E8E0D5</color>
+    <color name="shadow_light">#E0D8CC</color>
+    <color name="shadow_dark">#B8AFA0</color>
+
+    <!-- 玻璃拟态 -->
+    <color name="glass_bg">#99FFFFFF</color>
+    <color name="glass_border">#CCFFFFFF</color>
+
+    <!-- 新拟态 -->
+    <color name="neu_bg">#EDE7DD</color>
+    <color name="neu_light">#F5F1EB</color>
+    <color name="neu_dark">#C4BCAE</color>
+
+    <!-- 渐变 -->
+    <color name="gradient_start">#E8DDD0</color>
+    <color name="gradient_end">#D6C7B2</color>
+    <color name="gradient_expense_start">#D4A89E</color>
+    <color name="gradient_expense_end">#C4756B</color>
+    <color name="gradient_income_start">#A8C4A0</color>
+    <color name="gradient_income_end">#8BA888</color>
+
+    <!-- 日历 -->
+    <color name="calendar_today">#D6C7B2</color>
+    <color name="calendar_has_record">#E8DDD0</color>
+    <color name="calendar_selected">#C4756B</color>
+    <color name="calendar_weekday">#9B9B9B</color>
+    <color name="calendar_day_normal">#4A4A4A</color>
+    <color name="calendar_day_other">#D0D0D0</color>
 </resources>

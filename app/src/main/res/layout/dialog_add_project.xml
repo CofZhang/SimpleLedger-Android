@@ -3,21 +3,46 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="24dp"
+    android:background="@color/background">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/project_name"
+        android:textColor="@color/text_secondary"
+        android:textSize="14sp" />
 
     <EditText
         android:id="@+id/etProjectName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="项目名称（必填）"
-        android:inputType="text"/>
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_glass_card"
+        android:hint="@string/project_name"
+        android:padding="12dp"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_hint"
+        android:textSize="16sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/project_desc"
+        android:textColor="@color/text_secondary"
+        android:textSize="14sp" />
 
     <EditText
         android:id="@+id/etProjectDesc"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:hint="项目描述（选填）"
-        android:inputType="textMultiLine"
-        android:minLines="2"/>
+        android:background="@drawable/bg_glass_card"
+        android:hint="@string/project_desc"
+        android:padding="12dp"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_hint"
+        android:textSize="16sp" />
+
 </LinearLayout>

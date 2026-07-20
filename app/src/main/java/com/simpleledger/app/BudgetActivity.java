@@ -27,11 +27,6 @@ public class BudgetActivity extends AppCompatActivity {
         dbHelper = new DatabaseHelper(this);
         currentYearMonth = new SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(new Date());
 
-        initViews();
-        loadBudget();
-    }
-
-    private void initViews() {
         etBudget = findViewById(R.id.etBudget);
         tvUsed = findViewById(R.id.tvUsed);
         tvRemaining = findViewById(R.id.tvRemaining);
@@ -40,6 +35,8 @@ public class BudgetActivity extends AppCompatActivity {
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         findViewById(R.id.btnSave).setOnClickListener(v -> saveBudget());
+
+        loadBudget();
     }
 
     private void loadBudget() {
@@ -76,7 +73,7 @@ public class BudgetActivity extends AppCompatActivity {
             double remaining = budget - expense;
             tvRemaining.setText(String.format("剩余 ¥%.2f (使用率 %d%%)", remaining, progress));
             tvRemaining.setTextColor(getColor(R.color.income_color));
-            progressBudget.setProgressTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.colorPrimary)));
+            progressBudget.setProgressTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.colorAccent)));
         }
     }
 
@@ -100,11 +97,7 @@ public class BudgetActivity extends AppCompatActivity {
             return;
         }
 
-        if (budget == 0) {
-            dbHelper.setBudget(currentYearMonth, 0);
-        } else {
-            dbHelper.setBudget(currentYearMonth, budget);
-        }
+        dbHelper.setBudget(currentYearMonth, budget);
 
         double expense = dbHelper.getMonthlyExpense(currentYearMonth);
         updateBudgetStatus(budget, expense);
