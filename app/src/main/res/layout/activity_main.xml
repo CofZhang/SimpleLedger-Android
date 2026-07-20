@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 4.2 版本：修复按钮遮挡问题，由 MainActivity 通过 WindowInsets 处理安全区域 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_warm_spots"
-    android:fitsSystemWindows="true">
+    android:background="@drawable/bg_warm_spots">
 
+    <!-- Fragment 容器：顶部避开状态栏，底部避开系统导航栏 -->
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- 毛玻璃底部导航栏 + 凸起中间按钮 -->
+    <!-- 底部毛玻璃导航栏 + 凸起中间按钮（整体避开系统底部安全区域） -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -22,6 +23,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
+            <!-- 底部 Tab 栏 -->
             <com.google.android.material.bottomnavigation.BottomNavigationView
                 android:id="@+id/bottomNav"
                 android:layout_width="match_parent"
@@ -33,13 +35,15 @@
                 app:labelVisibilityMode="labeled"
                 app:menu="@menu/bottom_nav_menu" />
 
-            <!-- 凸起圆形玻璃主按钮（记账） -->
+            <!-- 凸起圆形玻璃主按钮（记账）：
+                 圆心位于 Tab 栏上边缘，上半圆完全突出在 Tab 栏上方，
+                 使用 marginTop 负值让按钮上移，整个圆形完整可见 -->
             <ImageButton
                 android:id="@+id/fabAdd"
                 android:layout_width="56dp"
                 android:layout_height="56dp"
-                android:layout_gravity="center"
-                android:layout_marginTop="-20dp"
+                android:layout_gravity="center_horizontal|top"
+                android:layout_marginTop="-28dp"
                 android:background="@drawable/bg_fab_add"
                 android:elevation="8dp"
                 android:src="@android:drawable/ic_input_add"

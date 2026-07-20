@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 4.2 版本：外圈圆环选中态 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:gravity="center"
     android:orientation="vertical"
-    android:padding="8dp">
+    android:padding="6dp">
 
     <FrameLayout
-        android:layout_width="56dp"
-        android:layout_height="56dp">
+        android:layout_width="58dp"
+        android:layout_height="58dp">
 
+        <!-- 分类图标圆形（低饱和度颜色，选中时颜色和图案保持不变） -->
         <TextView
             android:id="@+id/tvIcon"
             android:layout_width="48dp"
@@ -18,12 +20,14 @@
             android:background="@drawable/bg_category_normal"
             android:gravity="center"
             android:textColor="@color/white"
-            android:textSize="24sp" />
+            android:textSize="22sp" />
 
+        <!-- 外圈棕色圆环（选中时显示，透明中心，不遮挡图标，覆盖在最上层） -->
         <View
             android:id="@+id/viewSelected"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
+            android:layout_width="58dp"
+            android:layout_height="58dp"
+            android:layout_gravity="center"
             android:background="@drawable/bg_category_selected"
             android:visibility="gone" />
     </FrameLayout>

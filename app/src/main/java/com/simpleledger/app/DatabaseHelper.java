@@ -12,7 +12,7 @@ import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "simple_ledger.db";
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 4;
 
     private static final String TABLE_RECORDS = "records";
     private static final String TABLE_CATEGORIES = "categories";
@@ -105,47 +105,48 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private void initDefaultCategories(SQLiteDatabase db) {
-        addCategory(db, new Category("餐饮", "🍜", 0xFFF44336, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("购物", "🛒", 0xFFE91E63, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("日用", "🧴", 0xFF9C27B0, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("交通", "🚗", 0xFFFF9800, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("蔬菜", "🥬", 0xFF4CAF50, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("水果", "🍎", 0xFF8BC34A, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("零食", "🍪", 0xFFCDDC39, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("运动", "⚽", 0xFF00BCD4, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("娱乐", "🎮", 0xFF673AB7, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("通讯", "📱", 0xFF3F51B5, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("服饰", "👕", 0xFFE91E63, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("美容", "💄", 0xFFF06292, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("住房", "🏠", 0xFF795548, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("居家", "🛋️", 0xFF8D6E63, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("孩子", "👶", 0xFF42A5F5, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("长辈", "👴", 0xFF78909C, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("社交", "👥", 0xFFAB47BC, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("旅行", "✈️", 0xFF29B6F6, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("烟酒", "🚬", 0xFF5D4037, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("数码", "💻", 0xFF26A69A, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("汽车", "🚙", 0xFF455A64, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("医疗", "💊", 0xFFEF5350, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("书籍", "📚", 0xFF5C6BC0, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("学习", "✏️", 0xFF66BB6A, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("宠物", "🐱", 0xFFFFB300, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("礼金", "🧧", 0xFFEF5350, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("礼物", "🎁", 0xFFEC407A, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("办公", "📎", 0xFF78909C, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("维修", "🔧", 0xFFFF7043, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("捐赠", "❤️", 0xFFEF9A9A, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("彩票", "🎰", 0xFFBA68C8, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("亲友", "👨‍👩‍👧", 0xFF26C6DA, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("快递", "📦", 0xFF8D6E63, Record.TYPE_EXPENSE));
-        addCategory(db, new Category("其他", "📋", 0xFF607D8B, Record.TYPE_EXPENSE));
+        // 4.2 版本：全部降饱和度，莫兰迪/马卡龙色系，与奶茶棕主色调协调
+        addCategory(db, new Category("餐饮", "🍜", 0xFFE8B59A, Record.TYPE_EXPENSE));  // 低饱和暖橘
+        addCategory(db, new Category("购物", "🛒", 0xFFDBA9A0, Record.TYPE_EXPENSE));  // 低饱和豆沙红
+        addCategory(db, new Category("日用", "🧴", 0xFFB5A8B8, Record.TYPE_EXPENSE));  // 低饱和灰紫
+        addCategory(db, new Category("交通", "🚗", 0xFFA9BBC4, Record.TYPE_EXPENSE));  // 低饱和灰蓝
+        addCategory(db, new Category("蔬菜", "🥬", 0xFFA8BBA0, Record.TYPE_EXPENSE));  // 低饱和抹茶绿
+        addCategory(db, new Category("水果", "🍎", 0xFFE0A8A0, Record.TYPE_EXPENSE));  // 低饱和苹果红
+        addCategory(db, new Category("零食", "🍪", 0xFFD4C9A8, Record.TYPE_EXPENSE));  // 低饱和奶黄
+        addCategory(db, new Category("运动", "⚽", 0xFFA8C4C4, Record.TYPE_EXPENSE));  // 低饱和灰青
+        addCategory(db, new Category("娱乐", "🎮", 0xFFB5A8C4, Record.TYPE_EXPENSE));  // 低饱和灰紫
+        addCategory(db, new Category("通讯", "📱", 0xFFA8B5C4, Record.TYPE_EXPENSE));  // 低饱和雾蓝
+        addCategory(db, new Category("服饰", "👕", 0xFFD4A8B5, Record.TYPE_EXPENSE));  // 低饱和玫红
+        addCategory(db, new Category("美容", "💄", 0xFFE0A8B8, Record.TYPE_EXPENSE));  // 低饱和粉
+        addCategory(db, new Category("住房", "🏠", 0xFFB8A690, Record.TYPE_EXPENSE));  // 低饱和暖棕
+        addCategory(db, new Category("居家", "🛋️", 0xFFC4B5A0, Record.TYPE_EXPENSE)); // 低饱和米棕
+        addCategory(db, new Category("孩子", "👶", 0xFFA8C0D4, Record.TYPE_EXPENSE));  // 低饱和粉蓝
+        addCategory(db, new Category("长辈", "👴", 0xFFB0B8C0, Record.TYPE_EXPENSE));  // 低饱和灰
+        addCategory(db, new Category("社交", "👥", 0xFFBBA8C4, Record.TYPE_EXPENSE));  // 低饱和紫灰
+        addCategory(db, new Category("旅行", "✈️", 0xFFA8C4D4, Record.TYPE_EXPENSE));  // 低饱和天蓝
+        addCategory(db, new Category("烟酒", "🚬", 0xFFA89080, Record.TYPE_EXPENSE));  // 低饱和深棕
+        addCategory(db, new Category("数码", "💻", 0xFFA8B8B0, Record.TYPE_EXPENSE));  // 低饱和灰绿
+        addCategory(db, new Category("汽车", "🚙", 0xFF9AA8B0, Record.TYPE_EXPENSE));  // 低饱和蓝灰
+        addCategory(db, new Category("医疗", "💊", 0xFFE0A8A8, Record.TYPE_EXPENSE));  // 低饱和柔红
+        addCategory(db, new Category("书籍", "📚", 0xFFA8A8C4, Record.TYPE_EXPENSE));  // 低饱和蓝紫
+        addCategory(db, new Category("学习", "✏️", 0xFFA8C0A8, Record.TYPE_EXPENSE));  // 低饱和草绿
+        addCategory(db, new Category("宠物", "🐱", 0xFFD4BC8C, Record.TYPE_EXPENSE));  // 低饱和奶橙
+        addCategory(db, new Category("礼金", "🧧", 0xFFD8A8A0, Record.TYPE_EXPENSE));  // 低饱和红
+        addCategory(db, new Category("礼物", "🎁", 0xFFD4A8B8, Record.TYPE_EXPENSE));  // 低饱和粉红
+        addCategory(db, new Category("办公", "📎", 0xFFB0B8C0, Record.TYPE_EXPENSE));  // 低饱和灰
+        addCategory(db, new Category("维修", "🔧", 0xFFD4A890, Record.TYPE_EXPENSE));  // 低饱和橙
+        addCategory(db, new Category("捐赠", "❤️", 0xFFE0B5B5, Record.TYPE_EXPENSE));  // 低饱和浅红
+        addCategory(db, new Category("彩票", "🎰", 0xFFC4A8C4, Record.TYPE_EXPENSE));  // 低饱和紫
+        addCategory(db, new Category("亲友", "👨‍👩‍👧", 0xFFA8C4C0, Record.TYPE_EXPENSE)); // 低饱和青
+        addCategory(db, new Category("快递", "📦", 0xFFC4B098, Record.TYPE_EXPENSE));  // 低饱和卡其
+        addCategory(db, new Category("其他", "📋", 0xFFB0A8A0, Record.TYPE_EXPENSE));  // 低饱和暖灰
 
-        addCategory(db, new Category("工资", "💰", 0xFF4CAF50, Record.TYPE_INCOME));
-        addCategory(db, new Category("奖金", "🏆", 0xFF8BC34A, Record.TYPE_INCOME));
-        addCategory(db, new Category("投资", "📈", 0xFF009688, Record.TYPE_INCOME));
-        addCategory(db, new Category("兼职", "💼", 0xFF2196F3, Record.TYPE_INCOME));
-        addCategory(db, new Category("红包", "🧧", 0xFFFF5722, Record.TYPE_INCOME));
-        addCategory(db, new Category("其他收入", "💵", 0xFF00BCD4, Record.TYPE_INCOME));
+        addCategory(db, new Category("工资", "💰", 0xFFA8C0A8, Record.TYPE_INCOME));   // 低饱和绿
+        addCategory(db, new Category("奖金", "🏆", 0xFFC4D4A8, Record.TYPE_INCOME));   // 低饱和黄绿
+        addCategory(db, new Category("投资", "📈", 0xFFA8C0B8, Record.TYPE_INCOME));   // 低饱和青绿
+        addCategory(db, new Category("兼职", "💼", 0xFFA8B8C4, Record.TYPE_INCOME));   // 低饱和蓝
+        addCategory(db, new Category("红包", "🧧", 0xFFE0A890, Record.TYPE_INCOME));   // 低饱和橙红
+        addCategory(db, new Category("其他收入", "💵", 0xFFA8C4C4, Record.TYPE_INCOME));// 低饱和青
     }
 
     private long addCategory(SQLiteDatabase db, Category category) {
@@ -661,6 +662,35 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     + KEY_ACC_REMARK + " TEXT)";
             db.execSQL(createAccountsTable);
             initDefaultAccounts(db);
+        }
+        if (oldVersion < 4) {
+            // 4.2 版本：刷新所有默认分类的颜色为降饱和度莫兰迪色系
+            refreshDefaultCategoryColors(db);
+        }
+    }
+
+    private void refreshDefaultCategoryColors(SQLiteDatabase db) {
+        // 分类名 -> 新颜色映射（与 initDefaultCategories 保持一致）
+        String[][] colorMap = {
+                {"餐饮", "FFE8B59A"}, {"购物", "FFDBA9A0"}, {"日用", "FFB5A8B8"},
+                {"交通", "FFA9BBC4"}, {"蔬菜", "FFA8BBA0"}, {"水果", "FFE0A8A0"},
+                {"零食", "FFD4C9A8"}, {"运动", "FFA8C4C4"}, {"娱乐", "FFB5A8C4"},
+                {"通讯", "FFA8B5C4"}, {"服饰", "FFD4A8B5"}, {"美容", "FFE0A8B8"},
+                {"住房", "FFB8A690"}, {"居家", "FFC4B5A0"}, {"孩子", "FFA8C0D4"},
+                {"长辈", "FFB0B8C0"}, {"社交", "FFBBA8C4"}, {"旅行", "FFA8C4D4"},
+                {"烟酒", "FFA89080"}, {"数码", "FFA8B8B0"}, {"汽车", "FF9AA8B0"},
+                {"医疗", "FFE0A8A8"}, {"书籍", "FFA8A8C4"}, {"学习", "FFA8C0A8"},
+                {"宠物", "FFD4BC8C"}, {"礼金", "FFD8A8A0"}, {"礼物", "FFD4A8B8"},
+                {"办公", "FFB0B8C0"}, {"维修", "FFD4A890"}, {"捐赠", "FFE0B5B5"},
+                {"彩票", "FFC4A8C4"}, {"亲友", "FFA8C4C0"}, {"快递", "FFC4B098"},
+                {"其他", "FFB0A8A0"},
+                {"工资", "FFA8C0A8"}, {"奖金", "FFC4D4A8"}, {"投资", "FFA8C0B8"},
+                {"兼职", "FFA8B8C4"}, {"红包", "FFE0A890"}, {"其他收入", "FFA8C4C4"}
+        };
+        for (String[] entry : colorMap) {
+            ContentValues values = new ContentValues();
+            values.put(KEY_CAT_COLOR, (int) Long.parseLong(entry[1], 16));
+            db.update(TABLE_CATEGORIES, values, KEY_CAT_NAME + " = ?", new String[]{entry[0]});
         }
     }
 

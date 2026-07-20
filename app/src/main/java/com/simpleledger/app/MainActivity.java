@@ -2,7 +2,6 @@ package com.simpleledger.app;
 
 import android.os.Bundle;
 import android.view.View;
-import android.view.WindowManager;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.ViewCompat;
@@ -16,11 +15,12 @@ public class MainActivity extends AppCompatActivity {
     private Fragment recordsFragment, addRecordFragment, statsFragment;
     private Fragment activeFragment;
     private BottomNavigationView bottomNav;
+    private View bottomNavContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // 沉浸式全屏：内容延伸到状态栏
+        // 沉浸式全屏：内容延伸到状态栏，由 insets 处理安全区域
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
 
@@ -56,11 +56,20 @@ public class MainActivity extends AppCompatActivity {
             bottomNav.setSelectedItemId(R.id.nav_add);
         });
 
-        // 应用系统内边距到顶部状态栏区域
+        // 4.2 版本：正确处理系统内边距
+        // 1) Fragment 容器顶部避开状态栏（解决三点菜单被裁切）
+        // 2) 底部导航栏容器避开系统底部 Home Indicator 区域
         View container = findViewById(R.id.container);
-        ViewCompat.setOnApplyWindowInsetsListener(container, (v, insets) -> {
+        bottomNavContainer = (View) bottomNav.getParent();
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
             int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
-            v.setPadding(0, statusBarHeight, 0, 0);
+            int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+
+            // 容器顶部留出状态栏高度
+            container.setPadding(0, statusBarHeight, 0, 0);
+
+            // 底部导航栏容器底部留出系统导航栏高度
+            bottomNavContainer.setPadding(0, 0, 0, navBarHeight);
             return insets;
         });
     }
@@ -82,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 返回逻辑：非明细页先返回到明细页，再次返回才退出 APP
+     * 返回逻辑：非明细页先返回到明细页，再点返回才退出 APP
      */
     @Override
     public void onBackPressed() {

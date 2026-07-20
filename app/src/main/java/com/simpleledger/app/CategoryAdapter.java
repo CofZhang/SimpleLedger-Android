@@ -52,9 +52,10 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
 
         boolean isSelected = selectedCategoryId == category.getId();
 
+        // 4.2 版本：选中态用外圈棕色圆环表示，图标本身颜色和图案完全保持不变
         if (isSelected) {
             holder.viewSelected.setVisibility(View.VISIBLE);
-            holder.tvName.setTextColor(holder.itemView.getContext().getColor(R.color.colorAccent));
+            holder.tvName.setTextColor(holder.itemView.getContext().getColor(R.color.colorPrimary));
             holder.tvName.setTypeface(holder.tvName.getTypeface(), android.graphics.Typeface.BOLD);
         } else {
             holder.viewSelected.setVisibility(View.GONE);
@@ -62,14 +63,11 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
             holder.tvName.setTypeface(holder.tvName.getTypeface(), android.graphics.Typeface.NORMAL);
         }
 
+        // 图标背景圆形保持分类本身的低饱和颜色（选中不改变）
         GradientDrawable bg = (GradientDrawable) holder.tvIcon.getBackground();
         if (bg != null) {
             bg.setColor(category.getColor());
         }
-
-        float scale = isSelected ? 1.1f : 1.0f;
-        holder.itemView.setScaleX(scale);
-        holder.itemView.setScaleY(scale);
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
