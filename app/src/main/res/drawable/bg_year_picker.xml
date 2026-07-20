@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 5.1 年份选择器背景：圆角白色填充 + 浅灰描边 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#FFFFFF" />
+    <corners android:radius="18dp" />
+    <stroke android:width="1dp" android:color="#E8E0D5" />
+</shape>

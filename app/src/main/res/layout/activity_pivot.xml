@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 5.1 重新设计：年维度透视表 → 年账单汇总页面（暖米色简约风格） -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background">
+    android:background="#F8F3ED">
 
     <!-- 顶部 56dp 玻璃条导航栏 -->
     <LinearLayout
+        android:id="@+id/topNav"
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:background="@drawable/bg_gradient_header"
@@ -29,7 +32,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="数据透视表"
+            android:text="年账单"
             android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -39,139 +42,231 @@
             android:layout_height="40dp" />
     </LinearLayout>
 
-    <!-- 维度配置区（玻璃卡片） -->
+    <!-- 顶部切换栏：左侧年份选择 + 右侧月账单/年账单切换 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/bg_glass_card"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:layout_marginTop="14dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
+        <!-- 左侧：年份选择 -->
         <TextView
+            android:id="@+id/btnPivotYear"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="行=月份  列=分类  值=支出金额"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:background="@drawable/bg_year_picker"
+            android:paddingStart="14dp"
+            android:paddingEnd="10dp"
+            android:drawableEnd="@android:drawable/arrow_down_float"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            tools:ignore="HardcodedText,UnusedAttribute" />
 
+        <View
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+        <!-- 右侧：月账单/年账单 切换标签 -->
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="行：月份"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="列：分类"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="值：金额"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- 类型切换：支出 / 收入 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_segmented"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
             android:orientation="horizontal"
+            android:background="@drawable/bg_tab_switch"
             android:padding="3dp">
 
             <TextView
-                android:id="@+id/btnTypeExpense"
-                android:layout_width="0dp"
-                android:layout_height="32dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_segmented_selected"
+                android:id="@+id/btnTabMonth"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
                 android:gravity="center"
-                android:text="支出"
-                android:textColor="@color/white"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/btnTypeIncome"
-                android:layout_width="0dp"
-                android:layout_height="32dp"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="收入"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:text="月账单"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- 年份选择 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+                android:textStyle="bold"
+                tools:ignore="HardcodedText" />
 
             <TextView
+                android:id="@+id/btnTabYear"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="年份"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/btnPivotYear"
-                android:layout_width="0dp"
-                android:layout_height="32dp"
-                android:layout_weight="1"
-                android:layout_marginStart="12dp"
-                android:background="@drawable/bg_glass_capsule"
+                android:layout_height="match_parent"
                 android:gravity="center"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:textColor="@color/text_primary"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:background="@drawable/bg_tab_switch_selected"
+                android:text="年账单"
+                android:textColor="@color/white"
                 android:textSize="13sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:ignore="HardcodedText" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- 透视表（HorizontalScrollView + TableLayout） -->
-    <HorizontalScrollView
+    <!-- 顶部汇总卡片：年结余 / 年收入 / 年支出 -->
+    <LinearLayout
+        android:id="@+id/cardSummary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_summary_card_warm"
+        android:orientation="vertical"
+        android:paddingTop="22dp"
+        android:paddingBottom="22dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp">
+
+        <!-- 第一行：年结余 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="年结余"
+            android:textColor="#E6FFFFFF"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tvYearBalance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="¥0.00"
+            android:textColor="@color/white"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+        <!-- 第二行：年收入 / 年支出 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="年收入"
+                    android:textColor="#E6FFFFFF"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvYearIncome"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="¥0.00"
+                    android:textColor="@color/white"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="年支出"
+                    android:textColor="#E6FFFFFF"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvYearExpense"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="¥0.00"
+                    android:textColor="@color/white"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 月份列表表头 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="月份"
+            android:textColor="@color/text_hint"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.4"
+            android:gravity="end"
+            android:text="收入"
+            android:textColor="@color/text_hint"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.4"
+            android:gravity="end"
+            android:text="支出"
+            android:textColor="@color/text_hint"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.4"
+            android:gravity="end"
+            android:text="结余"
+            android:textColor="@color/text_hint"
+            android:textSize="12sp" />
+
+        <View
+            android:layout_width="20dp"
+            android:layout_height="match_parent" />
+    </LinearLayout>
+
+    <!-- 月份列表区域（动态添加行） -->
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="16dp"
-        android:scrollbars="horizontal">
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="12dp"
+        android:clipToPadding="false"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:scrollbars="none">
 
-        <TableLayout
-            android:id="@+id/tablePivot"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:id="@+id/listMonths"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:stretchColumns="*" />
-    </HorizontalScrollView>
+            android:orientation="vertical" />
+    </androidx.core.widget.NestedScrollView>
 
 </LinearLayout>

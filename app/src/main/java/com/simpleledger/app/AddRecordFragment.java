@@ -42,6 +42,7 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
     private List<Account> accounts;
     private CategoryAdapter categoryAdapter;
     private CalculatorKeyboard calculatorKeyboard;
+    private View rootView;  // 5.1 修复：保存 onCreateView 中的 view，避免 getView() 返回 null 导致闪退
 
     private EditText etAmount, etRemark, etTags;
     private TextView tvDate, tvProject, tvAccount;
@@ -51,6 +52,7 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_add_record, container, false);
+        rootView = view;  // 5.1 修复：保存 view 引用
 
         dbHelper = new DatabaseHelper(getContext());
         categories = new ArrayList<>();
@@ -281,9 +283,10 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
         categories.addAll(dbHelper.getCategories(currentType));
         categoryAdapter.updateData(categories);
 
-        // 5.0 修复：手动设置 RecyclerView 高度，避免在 NestedScrollView 中
+        // 5.1 修复：使用 rootView 代替 getView()，避免在 onCreateView 期间 getView() 返回 null 导致 NPE 闪退
+        // 同时手动设置 RecyclerView 高度，避免在 NestedScrollView 中
         // GridLayoutManager 的 wrap_content 测量 bug 导致只显示部分分类
-        RecyclerView rvCats = getView().findViewById(R.id.rvCategories);
+        RecyclerView rvCats = rootView.findViewById(R.id.rvCategories);
         if (rvCats != null && !categories.isEmpty()) {
             int spanCount = 4;
             int rowCount = (int) Math.ceil(categories.size() / (double) spanCount);
