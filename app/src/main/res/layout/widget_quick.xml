@@ -30,8 +30,9 @@
             android:layout_height="wrap_content"
             android:text="账单"
             android:textColor="#3D352C"
-            android:textSize="11sp"
-            android:layout_marginTop="2dp" />
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="3dp" />
     </LinearLayout>
 
     <!-- 支出 -->
@@ -58,8 +59,9 @@
             android:layout_height="wrap_content"
             android:text="支出"
             android:textColor="#3D352C"
-            android:textSize="11sp"
-            android:layout_marginTop="2dp" />
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="3dp" />
     </LinearLayout>
 
     <!-- 收入 -->
@@ -86,8 +88,9 @@
             android:layout_height="wrap_content"
             android:text="收入"
             android:textColor="#3D352C"
-            android:textSize="11sp"
-            android:layout_marginTop="2dp" />
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="3dp" />
     </LinearLayout>
 
     <!-- 统计 -->
@@ -114,8 +117,9 @@
             android:layout_height="wrap_content"
             android:text="统计"
             android:textColor="#3D352C"
-            android:textSize="11sp"
-            android:layout_marginTop="2dp" />
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="3dp" />
     </LinearLayout>
 
 </LinearLayout>
