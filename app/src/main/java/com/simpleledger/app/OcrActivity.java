@@ -216,14 +216,20 @@ public class OcrActivity extends AppCompatActivity {
     }
 
     /**
-     * 6.4 解析多笔交易
-     * 策略：按行扫描，每行尝试匹配日期+金额+分类+备注
+     * 6.5 大幅优化解析多笔交易
+     * 策略：
+     *  1) 收集所有文本行
+     *  2) 先扫描找出"日期行"（含明确日期格式的行）
+     *  3) 扫描每行，用严格金额识别（带货币符号优先）找出"交易行"
+     *  4) 对每个交易行，向上找最近的日期作为该交易日期
+     *  5) 从交易行及相邻行提取分类关键词
      */
     private void parseTransactions(Text text) {
         transactions.clear();
         List<Text.TextBlock> blocks = text.getTextBlocks();
-        String lastDate = today();
-        // 收集所有非空文本行
+        String globalDate = today();
+
+        // 收集所有非空文本行，保留原始顺序
         List<String> lines = new ArrayList<>();
         for (Text.TextBlock b : blocks) {
             for (Text.Line line : b.getLines()) {
@@ -232,40 +238,83 @@ public class OcrActivity extends AppCompatActivity {
             }
         }
 
-        // 尝试匹配多笔交易
+        // 第一步：找全局日期（截图顶部通常有月份/日期）
         for (String line : lines) {
-            OcrTransaction t = parseLine(line, lastDate);
-            if (t != null) {
-                if (t.getDate() != null && !t.getDate().isEmpty()) {
-                    lastDate = t.getDate();
-                } else {
-                    t.setDate(lastDate);
+            String d = extractDate(line);
+            if (d != null) {
+                globalDate = d;
+                break;
+            }
+        }
+
+        // 第二步：扫描每行，识别交易
+        String currentDate = globalDate;
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            // 更新当前日期（如果该行有日期）
+            String lineDate = extractDate(line);
+            if (lineDate != null) {
+                currentDate = lineDate;
+            }
+
+            // 识别该行是否为交易行（必须能提取到严格金额）
+            Double amount = extractStrictAmount(line);
+            if (amount == null || amount <= 0) continue;
+
+            OcrTransaction t = new OcrTransaction();
+            t.setAmount(amount);
+            t.setDate(currentDate);
+
+            // 从当前行和相邻行（上下各 1 行）提取分类
+            StringBuilder context = new StringBuilder(line);
+            if (i > 0) context.insert(0, lines.get(i - 1) + " ");
+            if (i < lines.size() - 1) context.append(" " + lines.get(i + 1));
+            String category = matchCategoryKeyword(context.toString());
+            if (category != null) {
+                t.setCategoryName(category);
+            }
+
+            // 备注：从行中去除金额、日期、分类关键词后的剩余
+            String remark = cleanRemark(line);
+            if (remark != null && !remark.isEmpty()) {
+                t.setRemark(remark);
+            }
+
+            // 判断收入/支出
+            if (line.contains("收入") || line.contains("工资") || line.contains("奖金")
+                    || line.contains("红包") || line.contains("理财") || line.contains("报销")
+                    || line.contains("退款") || line.contains("转入")) {
+                t.setType(Record.TYPE_INCOME);
+            }
+
+            matchCategory(t);
+            transactions.add(t);
+        }
+
+        // 兜底：如果按行没识别到，尝试按 TextBlock 整块识别
+        if (transactions.isEmpty()) {
+            for (Text.TextBlock b : blocks) {
+                String blockText = b.getText();
+                Double amt = extractStrictAmount(blockText);
+                if (amt != null && amt > 0) {
+                    OcrTransaction t = new OcrTransaction();
+                    t.setAmount(amt);
+                    t.setDate(globalDate);
+                    String cat = matchCategoryKeyword(blockText);
+                    if (cat != null) t.setCategoryName(cat);
+                    matchCategory(t);
+                    transactions.add(t);
                 }
-                // 自动匹配分类
-                matchCategory(t);
-                transactions.add(t);
-            }
-        }
-
-        // 如果没匹配到多笔，尝试整段文本提取金额（兼容旧版单笔模式）
-        if (transactions.isEmpty()) {
-            String full = text.getText();
-            List<Double> amounts = extractAllAmounts(full);
-            for (Double amt : amounts) {
-                OcrTransaction t = new OcrTransaction();
-                t.setAmount(amt);
-                t.setDate(today());
-                transactions.add(t);
             }
         }
 
         if (transactions.isEmpty()) {
-            tvHint.setText("未识别到账单信息，请尝试更清晰的截图");
+            tvHint.setText("未识别到账单信息，请尝试更清晰的截图\n提示：金额需带 ¥/￥/元 符号或小数点");
             layoutEmpty.setVisibility(View.VISIBLE);
             rvTransactions.setVisibility(View.GONE);
             btnImport.setVisibility(View.GONE);
         } else {
-            tvHint.setText("已识别 " + transactions.size() + " 笔账单，可编辑后一键填充");
+            tvHint.setText("已识别 " + transactions.size() + " 笔账单，可编辑后一键填充\n如识别有误可手动修改每条记录");
             layoutEmpty.setVisibility(View.GONE);
             rvTransactions.setVisibility(View.VISIBLE);
             btnImport.setVisibility(View.VISIBLE);
@@ -273,120 +322,224 @@ public class OcrActivity extends AppCompatActivity {
         }
     }
 
-    /** 解析单行文本，提取日期+金额+分类+备注 */
-    private OcrTransaction parseLine(String line, String fallbackDate) {
-        // 必须有金额才算有效行
-        Double amount = extractFirstAmount(line);
-        if (amount == null || amount <= 0) return null;
+    /**
+     * 6.5 严格金额识别（大幅优化）
+     * 优先级：
+     *   1) 带货币符号：¥123.45、￥123、123元、123块、RMB123
+     *   2) 带小数点且小数位 1-2 位：123.45、123.5
+     *   3) 排除：年份 19xx/20xx、时间 HH:mm、订单号（>8位）、日期数字
+     *   4) 金额范围：0.01 ~ 1000000
+     */
+    private Double extractStrictAmount(String text) {
+        if (text == null || text.isEmpty()) return null;
 
-        OcrTransaction t = new OcrTransaction();
-        t.setAmount(amount);
-
-        // 提取日期
-        String date = extractDate(line);
-        if (date != null) {
-            t.setDate(date);
+        // 优先级 1：带货币符号的金额
+        // ¥123.45 / ￥123 / 123元 / 123.5元 / 123块钱 / 123.45块
+        Pattern pSym = Pattern.compile("(?:¥|￥|RMB|￥)\\s*(\\d+(?:\\.\\d{1,2})?)");
+        Matcher mSym = pSym.matcher(text);
+        if (mSym.find()) {
+            try {
+                double v = Double.parseDouble(mSym.group(1));
+                if (isValidAmount(v)) return v;
+            } catch (Exception ignored) {}
+        }
+        Pattern pSym2 = Pattern.compile("(\\d+(?:\\.\\d{1,2})?)\\s*(?:元|块钱?|圆|RMB)");
+        Matcher mSym2 = pSym2.matcher(text);
+        if (mSym2.find()) {
+            try {
+                double v = Double.parseDouble(mSym2.group(1));
+                if (isValidAmount(v)) return v;
+            } catch (Exception ignored) {}
         }
 
-        // 提取分类（关键词匹配）
-        String category = matchCategoryKeyword(line);
-        if (category != null) {
-            t.setCategoryName(category);
+        // 优先级 2：带小数点且小数位 1-2 位的数字（排除年份、时间）
+        // 匹配 123.45 或 123.4，不匹配 123.456（小数位>2）
+        Pattern pDecimal = Pattern.compile("(?<!\\d)(\\d{1,7}\\.\\d{1,2})(?!\\d)");
+        Matcher mDecimal = pDecimal.matcher(text);
+        double bestDecimal = 0;
+        while (mDecimal.find()) {
+            try {
+                double v = Double.parseDouble(mDecimal.group(1));
+                if (isValidAmount(v) && v > bestDecimal) {
+                    bestDecimal = v;
+                }
+            } catch (Exception ignored) {}
+        }
+        if (bestDecimal > 0) return bestDecimal;
+
+        // 优先级 3：纯整数金额（仅在同行有"支出/收入/消费/花费"等关键词时才识别）
+        if (text.contains("支出") || text.contains("收入") || text.contains("消费")
+                || text.contains("花费") || text.contains("花") || text.contains("付")
+                || text.contains("买") || text.contains("账单")) {
+            // 匹配 1-5 位整数，排除年份 19xx/20xx 和时间 HH:mm
+            Pattern pInt = Pattern.compile("(?<!\\d)([1-9]\\d{0,5})(?!\\d|[:-])");
+            Matcher mInt = pInt.matcher(text);
+            double bestInt = 0;
+            while (mInt.find()) {
+                try {
+                    double v = Double.parseDouble(mInt.group(1));
+                    // 排除年份 1900-2099
+                    if (v >= 1900 && v <= 2099) continue;
+                    if (isValidAmount(v) && v > bestInt) {
+                        bestInt = v;
+                    }
+                } catch (Exception ignored) {}
+            }
+            if (bestInt > 0) return bestInt;
         }
 
-        // 备注 = 去除金额、日期、分类后的剩余
-        String remark = line;
-        remark = remark.replaceAll("\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}", "");
-        remark = remark.replaceAll("\\d{1,2}[-/]\\d{1,2}", "");
-        remark = remark.replaceAll("\\d+(?:\\.\\d{1,2})?\\s*(?:元|块钱?|圆|RMB|￥|¥)", "");
-        remark = remark.replaceAll("(?:支出|收入|餐饮|交通|购物|娱乐|住房|医疗|教育|工资|奖金|红包|理财|其他)", "");
-        remark = remark.replaceAll("[\\s\\-/:：¥￥]", "").trim();
-        if (remark.isEmpty()) remark = null;
-        t.setRemark(remark);
-
-        // 判断收入/支出（默认支出）
-        if (line.contains("收入") || line.contains("工资") || line.contains("奖金")
-                || line.contains("红包") || line.contains("理财") || line.contains("报销")) {
-            t.setType(Record.TYPE_INCOME);
-        }
-
-        return t;
-    }
-
-    /** 提取首个金额 */
-    private Double extractFirstAmount(String text) {
-        Pattern p = Pattern.compile("(?:¥|￥|RMB)?\\s*(\\d+(?:\\.\\d{1,2})?)\\s*(?:元|块|圆|RMB|￥|¥)?");
-        Matcher m = p.matcher(text);
-        if (m.find()) {
-            try { return Double.parseDouble(m.group(1)); }
-            catch (Exception e) { return null; }
-        }
         return null;
     }
 
-    /** 提取所有金额 */
-    private List<Double> extractAllAmounts(String text) {
-        List<Double> list = new ArrayList<>();
-        Pattern p = Pattern.compile("(?:¥|￥|RMB)?\\s*(\\d+(?:\\.\\d{1,2})?)\\s*(?:元|块|圆|RMB|￥|¥)?");
-        Matcher m = p.matcher(text);
-        while (m.find()) {
-            try {
-                double v = Double.parseDouble(m.group(1));
-                if (v > 0) list.add(v);
-            } catch (Exception ignored) {}
-        }
-        return list;
+    /** 6.5 判断是否为有效金额 */
+    private boolean isValidAmount(double v) {
+        return v >= 0.01 && v <= 1000000;
     }
 
-    /** 提取日期：支持 yyyy-MM-dd, yyyy/MM/dd, MM-dd, MM/dd */
+    /** 6.5 清理备注：去除金额、日期、分类关键词、特殊符号 */
+    private String cleanRemark(String line) {
+        String remark = line;
+        // 去除货币符号+金额
+        remark = remark.replaceAll("(?:¥|￥|RMB)\\s*\\d+(?:\\.\\d{1,2})?", "");
+        remark = remark.replaceAll("\\d+(?:\\.\\d{1,2})?\\s*(?:元|块钱?|圆|RMB)", "");
+        // 去除纯金额
+        remark = remark.replaceAll("\\d+\\.\\d{1,2}", "");
+        // 去除日期
+        remark = remark.replaceAll("\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}", "");
+        remark = remark.replaceAll("\\d{1,2}月\\d{1,2}日?", "");
+        remark = remark.replaceAll("\\d{4}年\\d{1,2}月\\d{1,2}日?", "");
+        // 去除时间
+        remark = remark.replaceAll("\\d{1,2}:\\d{2}", "");
+        // 去除分类关键词
+        remark = remark.replaceAll("(?:支出|收入|餐饮|交通|购物|娱乐|住房|医疗|教育|通讯|美容|零食|数码|工资|奖金|红包|理财|报销|其他|今日|昨日|今天|昨天|明细|账单|合计|总计|余额|结余)", "");
+        // 去除特殊符号
+        remark = remark.replaceAll("[\\s\\-/:：¥￥·•|+]", "").trim();
+        return remark;
+    }
+
+    /**
+     * 6.5 优化日期识别
+     * 支持：yyyy-MM-dd、yyyy/MM/dd、yyyy年MM月dd日、MM月dd日、今天、昨天、前天
+     * 不再匹配 MM-dd（避免和时间 HH-mm 混淆）
+     */
     private String extractDate(String text) {
+        if (text == null || text.isEmpty()) return null;
         int year = Calendar.getInstance().get(Calendar.YEAR);
-        // yyyy-MM-dd
-        Pattern p1 = Pattern.compile("(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})");
+        Calendar cal = Calendar.getInstance();
+
+        // 今天/昨天/前天
+        if (text.contains("今天") || text.contains("今日")) {
+            return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cal.getTime());
+        }
+        if (text.contains("昨天") || text.contains("昨日")) {
+            cal.add(Calendar.DAY_OF_MONTH, -1);
+            return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cal.getTime());
+        }
+        if (text.contains("前天")) {
+            cal.add(Calendar.DAY_OF_MONTH, -2);
+            return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cal.getTime());
+        }
+
+        // yyyy年MM月dd日
+        Pattern p1 = Pattern.compile("(\\d{4})年(\\d{1,2})月(\\d{1,2})日?");
         Matcher m1 = p1.matcher(text);
         if (m1.find()) {
-            return String.format(Locale.getDefault(), "%04d-%02d-%02d",
-                    Integer.parseInt(m1.group(1)),
-                    Integer.parseInt(m1.group(2)),
-                    Integer.parseInt(m1.group(3)));
+            try {
+                int y = Integer.parseInt(m1.group(1));
+                int mm = Integer.parseInt(m1.group(2));
+                int dd = Integer.parseInt(m1.group(3));
+                if (isValidDate(y, mm, dd)) {
+                    return String.format(Locale.getDefault(), "%04d-%02d-%02d", y, mm, dd);
+                }
+            } catch (Exception ignored) {}
         }
-        // MM-dd
-        Pattern p2 = Pattern.compile("(?<!\\d)(\\d{1,2})[-/](\\d{1,2})(?!\\d)");
+
+        // MM月dd日（用当前年份补全）
+        Pattern p2 = Pattern.compile("(?<!\\d)(\\d{1,2})月(\\d{1,2})日?");
         Matcher m2 = p2.matcher(text);
         if (m2.find()) {
             try {
                 int mm = Integer.parseInt(m2.group(1));
                 int dd = Integer.parseInt(m2.group(2));
-                if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+                if (isValidDate(year, mm, dd)) {
                     return String.format(Locale.getDefault(), "%04d-%02d-%02d", year, mm, dd);
                 }
             } catch (Exception ignored) {}
         }
+
+        // yyyy-MM-dd 或 yyyy/MM/dd（严格：年份 1900-2099，月 1-12，日 1-31）
+        Pattern p3 = Pattern.compile("(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})");
+        Matcher m3 = p3.matcher(text);
+        if (m3.find()) {
+            try {
+                int y = Integer.parseInt(m3.group(1));
+                int mm = Integer.parseInt(m3.group(2));
+                int dd = Integer.parseInt(m3.group(3));
+                if (isValidDate(y, mm, dd)) {
+                    return String.format(Locale.getDefault(), "%04d-%02d-%02d", y, mm, dd);
+                }
+            } catch (Exception ignored) {}
+        }
+
         return null;
     }
 
-    /** 文本中匹配分类关键词 */
+    /** 6.5 校验日期是否有效 */
+    private boolean isValidDate(int y, int m, int d) {
+        if (y < 1900 || y > 2099) return false;
+        if (m < 1 || m > 12) return false;
+        if (d < 1 || d > 31) return false;
+        return true;
+    }
+
+    /** 文本中匹配分类关键词（6.5 扩充） */
     private String matchCategoryKeyword(String text) {
         if (text == null) return null;
-        // 常见分类关键词（含别名）
+        // 常见分类关键词（含别名），6.5 大幅扩充
         String[][] keywords = {
-                {"餐饮", "餐饮", "吃饭", "早餐", "午餐", "晚餐", "夜宵", "外卖", "饭店", "餐厅", "食堂", "美食", "小吃"},
-                {"交通", "交通", "打车", "地铁", "公交", "出租车", "高铁", "火车", "飞机", "停车", "油费", "过路费"},
-                {"购物", "购物", "超市", "商场", "便利店", "淘宝", "京东", "拼多多", "网购"},
-                {"服饰", "服饰", "衣服", "鞋", "包", "服装"},
-                {"娱乐", "娱乐", "电影", "游戏", "KTV", "演出", "演唱会"},
-                {"住房", "住房", "房租", "水电", "物业", "燃气", "宽带"},
-                {"医疗", "医疗", "医院", "药", "看病", "门诊"},
-                {"教育", "教育", "书", "课程", "培训", "学费", "考试"},
-                {"通讯", "通讯", "话费", "流量", "手机"},
-                {"美容", "美容", "理发", "护肤", "化妆品"},
-                {"零食", "零食", "奶茶", "咖啡", "饮料", "水果"},
-                {"数码", "数码", "手机", "电脑", "耳机", "电子"},
-                {"工资", "工资"},
-                {"奖金", "奖金"},
-                {"红包", "红包"},
-                {"理财", "理财", "利息", "收益"},
-                {"报销", "报销"}
+                {"餐饮", "餐饮", "吃饭", "早餐", "午餐", "晚餐", "夜宵", "外卖", "饭店", "餐厅",
+                        "食堂", "美食", "小吃", "早饭", "午饭", "晚饭", "火锅", "烧烤", "快餐",
+                        "面", "米粉", "饺子", "汉堡", "披萨", "寿司", "日料", "韩餐", "中餐",
+                        "西餐", "饮料", "可乐", "雪碧", "果汁", "茶", "咖啡", "奶茶", "啤酒"},
+                {"交通", "交通", "打车", "地铁", "公交", "出租车", "高铁", "火车", "飞机",
+                        "停车", "油费", "过路费", "滴滴", "快的", " Uber", "机票", "车票",
+                        "火车票", "bus", "taxi", "加油", "充电桩", "共享单车", "哈啰"},
+                {"购物", "购物", "超市", "商场", "便利店", "淘宝", "京东", "拼多多", "网购",
+                        "天猫", "苏宁", "唯品会", "亚马逊", "买东西", "日用品", "纸巾", "洗衣液",
+                        "洗发水", "沐浴露", "牙膏", "毛巾"},
+                {"服饰", "服饰", "衣服", "鞋", "包", "服装", "裤子", "裙子", "外套", "T恤",
+                        "衬衫", "运动鞋", "皮鞋", "帽子", "围巾", "手套", "内衣", "袜子"},
+                {"娱乐", "娱乐", "电影", "游戏", "KTV", "演出", "演唱会", "网吧", "ktv",
+                        "音乐会", "话剧", "展览", "游乐园", "密室", "桌游", "Steam", "ps5"},
+                {"住房", "住房", "房租", "水电", "物业", "燃气", "宽带", "电费", "水费",
+                        "天然气", "暖气", "房贷", "租金"},
+                {"医疗", "医疗", "医院", "药", "看病", "门诊", "挂号", "体检", "牙科",
+                        "眼科", "感冒药", "维生素", "保健品", "诊所"},
+                {"教育", "教育", "书", "课程", "培训", "学费", "考试", "教材", "网课",
+                        "英语", "数学", "语文", "物理", "化学", "钢琴", "吉他", "绘画",
+                        "培训班", "辅导"},
+                {"通讯", "通讯", "话费", "流量", "手机", "宽带费", "月租", "充值",
+                        "移动", "联通", "电信"},
+                {"美容", "美容", "理发", "护肤", "化妆品", "美甲", "美发", "烫发", "染发",
+                        "面膜", "口红", "粉底", "香水", "spa", "按摩"},
+                {"零食", "零食", "奶茶", "咖啡", "饮料", "水果", "薯片", "巧克力", "饼干",
+                        "糖果", "坚果", "瓜子", "可乐", "果汁", "蛋糕", "甜品", "冰淇淋"},
+                {"数码", "数码", "手机", "电脑", "耳机", "电子", "相机", "平板", "笔记本",
+                        "键盘", "鼠标", "显示器", "路由器", "U盘", "硬盘", "充电器", "数据线",
+                        "手机壳", "贴膜"},
+                {"宠物", "宠物", "猫粮", "狗粮", "猫砂", "兽医", "宠物医院", "牵引绳"},
+                {"运动", "运动", "健身", "健身房", "瑜伽", "跑步", "游泳", "篮球", "足球",
+                        "羽毛球", "网球", "乒乓球", "器械", "蛋白粉"},
+                {"旅行", "旅行", "旅游", "酒店", "民宿", "景点", "门票", "签证", "跟团",
+                        "自由行", "攻略"},
+                {"人情", "人情", "份子钱", "红包", "礼金", "随礼", "结婚", "生日"},
+                {"工资", "工资", "薪水", "底薪", "加班费"},
+                {"奖金", "奖金", "年终奖", "绩效", "提成", "分红"},
+                {"红包", "红包", "微信红包", "支付宝红包", "转账"},
+                {"理财", "理财", "利息", "收益", "基金", "股票", "债券", "余额宝", "定期",
+                        "理财收益"},
+                {"报销", "报销", "退款", "退货", "退钱"},
+                {"兼职", "兼职", "外快", "副业", "稿费", "咨询费"}
         };
         for (String[] group : keywords) {
             for (int i = 1; i < group.length; i++) {
