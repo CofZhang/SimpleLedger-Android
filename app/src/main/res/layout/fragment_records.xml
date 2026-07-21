@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@android:color/transparent">
+    android:background="@color/background">
 
     <!-- 1. 顶部导航栏：标题 + 月份切换 + 汇总（全部整合到一行） -->
     <LinearLayout

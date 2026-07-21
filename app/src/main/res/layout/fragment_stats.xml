@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@android:color/transparent">
+    android:background="@color/background">
 
     <!-- 1. 顶部导航栏（全宽矩形玻璃条，56dp，标题左对齐）
          4.6 修复：添加 id topNav，由代码动态添加状态栏高度的 paddingTop -->

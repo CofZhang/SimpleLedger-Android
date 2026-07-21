@@ -1,7 +1,9 @@
 package com.simpleledger.app;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -18,6 +20,7 @@ import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -44,6 +47,16 @@ public class OcrActivity extends AppCompatActivity {
     private TextView tvResult, tvHint;
     private LinearLayout layoutAmounts;
     private Bitmap currentBitmap;
+
+    // 6.1 运行时请求 CAMERA 权限
+    private final ActivityResultLauncher<String> cameraPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) {
+                    launchCamera();
+                } else {
+                    Toast.makeText(this, "需要摄像头权限才能拍照识别小票", Toast.LENGTH_LONG).show();
+                }
+            });
 
     private final ActivityResultLauncher<Intent> cameraLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
@@ -108,8 +121,13 @@ public class OcrActivity extends AppCompatActivity {
 
         btnCamera.setOnClickListener(v -> {
             HapticHelper.light(this);
-            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            cameraLauncher.launch(intent);
+            // 6.1 先检查 CAMERA 权限，未授权则请求
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                    == PackageManager.PERMISSION_GRANTED) {
+                launchCamera();
+            } else {
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+            }
         });
 
         btnGallery.setOnClickListener(v -> {
@@ -117,6 +135,16 @@ public class OcrActivity extends AppCompatActivity {
             Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
             galleryLauncher.launch(intent);
         });
+    }
+
+    /** 6.1 启动相机（已取得 CAMERA 权限后调用） */
+    private void launchCamera() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            cameraLauncher.launch(intent);
+        } else {
+            Toast.makeText(this, "未找到相机应用", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void recognize(Bitmap bitmap) {

@@ -1,6 +1,8 @@
 package com.simpleledger.app;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
@@ -12,7 +14,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -43,6 +48,16 @@ public class VoiceRecordActivity extends AppCompatActivity {
     private double parsedAmount = 0;
     private String parsedRemark = "";
     private int selectedType = Record.TYPE_EXPENSE;
+
+    // 6.1 运行时请求 RECORD_AUDIO 权限
+    private final ActivityResultLauncher<String> audioPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) {
+                    startListening();
+                } else {
+                    Toast.makeText(this, "需要麦克风权限才能进行语音识别", Toast.LENGTH_LONG).show();
+                }
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -133,18 +148,12 @@ public class VoiceRecordActivity extends AppCompatActivity {
         btnSpeak.setOnClickListener(v -> {
             HapticHelper.medium(this);
             if (speechRecognizer == null) return;
-            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN");
-            intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
-            try {
-                btnSpeak.setEnabled(false);
-                btnSpeak.setText("🎤 正在录音...");
-                speechRecognizer.startListening(intent);
-            } catch (Exception e) {
-                Toast.makeText(this, "无法启动语音识别：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                btnSpeak.setEnabled(true);
-                btnSpeak.setText("🎤 点击说话");
+            // 6.1 先检查 RECORD_AUDIO 权限，未授权则请求
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                    == PackageManager.PERMISSION_GRANTED) {
+                startListening();
+            } else {
+                audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
             }
         });
 
@@ -183,6 +192,23 @@ public class VoiceRecordActivity extends AppCompatActivity {
             startActivity(intent);
             finish();
         });
+    }
+
+    /** 6.1 启动语音识别（已取得 RECORD_AUDIO 权限后调用） */
+    private void startListening() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN");
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+        try {
+            btnSpeak.setEnabled(false);
+            btnSpeak.setText("🎤 正在录音...");
+            speechRecognizer.startListening(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "无法启动语音识别：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+            btnSpeak.setEnabled(true);
+            btnSpeak.setText("🎤 点击说话");
+        }
     }
 
     /** 解析语音识别文本，提取金额和备注 */
