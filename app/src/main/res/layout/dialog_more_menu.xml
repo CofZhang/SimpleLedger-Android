@@ -206,13 +206,43 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- 4.5 第三行：设置入口 -->
+    <!-- 4.5 第三行：日期范围 + 设置 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:orientation="horizontal"
         android:weightSum="3">
+
+        <!-- 5.6 自定义日期范围入口 -->
+        <LinearLayout
+            android:id="@+id/itemDateRange"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_category_normal"
+                android:gravity="center"
+                android:text="📆"
+                android:textSize="24sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="日期范围"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/itemSettings"
@@ -246,7 +276,7 @@
         <View
             android:layout_width="0dp"
             android:layout_height="1dp"
-            android:layout_weight="2" />
+            android:layout_weight="1" />
     </LinearLayout>
 
 </LinearLayout>

@@ -34,6 +34,7 @@
         <activity android:name=".HeatmapActivity" />
         <activity android:name=".PivotActivity" />
         <activity android:name=".SettingsActivity" />
+        <activity android:name=".DateRangeActivity" />
 
         <receiver
             android:name=".ReminderReceiver"

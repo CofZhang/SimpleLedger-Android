@@ -678,6 +678,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return getSum(null, Record.TYPE_EXPENSE, projectId);
     }
 
+    /** 5.6 新增：获取项目总收入 */
+    public double getProjectIncome(long projectId) {
+        return getSum(null, Record.TYPE_INCOME, projectId);
+    }
+
     private double getSum(String dateLike, int type, long projectId) {
         StringBuilder query = new StringBuilder("SELECT SUM(" + KEY_AMOUNT + ") FROM " + TABLE_RECORDS + " WHERE " + KEY_TYPE + " = ?");
         List<String> args = new ArrayList<>();
@@ -838,6 +843,160 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         cursor.close();
         return stats;
+    }
+
+    /**
+     * 5.6 新增：按日期范围查询账单明细
+     */
+    public List<Record> getRecordsByDateRange(String startDate, String endDate) {
+        List<Record> records = new ArrayList<>();
+        String selectQuery = "SELECT r.*, c." + KEY_CAT_NAME + ", c." + KEY_CAT_ICON + ", c." + KEY_CAT_COLOR
+                + ", p." + KEY_PROJ_NAME
+                + ", a." + KEY_ACC_NAME + ", a." + KEY_ACC_ICON
+                + " FROM " + TABLE_RECORDS + " r"
+                + " LEFT JOIN " + TABLE_CATEGORIES + " c ON r." + KEY_CATEGORY_ID + " = c." + KEY_ID
+                + " LEFT JOIN " + TABLE_PROJECTS + " p ON r." + KEY_PROJECT_ID + " = p." + KEY_ID
+                + " LEFT JOIN " + TABLE_ACCOUNTS + " a ON r." + KEY_ACCOUNT_ID + " = a." + KEY_ID
+                + " WHERE r." + KEY_DATE + " >= ? AND r." + KEY_DATE + " <= ?"
+                + " ORDER BY r." + KEY_TIMESTAMP + " DESC";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, new String[]{startDate, endDate});
+        if (cursor.moveToFirst()) {
+            do {
+                Record record = cursorToRecord(cursor);
+                fillJoinFields(record, cursor);
+                records.add(record);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return records;
+    }
+
+    /**
+     * 5.6 新增：按日期范围 + 项目查询账单明细
+     */
+    public List<Record> getRecordsByDateRangeAndProject(String startDate, String endDate, long projectId) {
+        List<Record> records = new ArrayList<>();
+        String selectQuery = "SELECT r.*, c." + KEY_CAT_NAME + ", c." + KEY_CAT_ICON + ", c." + KEY_CAT_COLOR
+                + ", p." + KEY_PROJ_NAME
+                + ", a." + KEY_ACC_NAME + ", a." + KEY_ACC_ICON
+                + " FROM " + TABLE_RECORDS + " r"
+                + " LEFT JOIN " + TABLE_CATEGORIES + " c ON r." + KEY_CATEGORY_ID + " = c." + KEY_ID
+                + " LEFT JOIN " + TABLE_PROJECTS + " p ON r." + KEY_PROJECT_ID + " = p." + KEY_ID
+                + " LEFT JOIN " + TABLE_ACCOUNTS + " a ON r." + KEY_ACCOUNT_ID + " = a." + KEY_ID
+                + " WHERE r." + KEY_DATE + " >= ? AND r." + KEY_DATE + " <= ? AND r." + KEY_PROJECT_ID + " = ?"
+                + " ORDER BY r." + KEY_TIMESTAMP + " DESC";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, new String[]{startDate, endDate, String.valueOf(projectId)});
+        if (cursor.moveToFirst()) {
+            do {
+                Record record = cursorToRecord(cursor);
+                fillJoinFields(record, cursor);
+                records.add(record);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return records;
+    }
+
+    /**
+     * 5.6 新增：按日期范围查询每个分类的支出和收入
+     * 返回列表每个元素包含分类信息和对应的支出、收入金额
+     */
+    public List<CategoryStatBoth> getCategoryStatsBothForDateRange(String startDate, String endDate) {
+        // 先查出所有有记录的分类 ID
+        List<CategoryStatBoth> result = new ArrayList<>();
+        String query = "SELECT c." + KEY_ID + ", c." + KEY_CAT_NAME + ", c." + KEY_CAT_ICON + ", c." + KEY_CAT_COLOR
+                + ", SUM(CASE WHEN r." + KEY_TYPE + " = " + Record.TYPE_EXPENSE
+                + " THEN r." + KEY_AMOUNT + " ELSE 0 END) as expense,"
+                + " SUM(CASE WHEN r." + KEY_TYPE + " = " + Record.TYPE_INCOME
+                + " THEN r." + KEY_AMOUNT + " ELSE 0 END) as income"
+                + " FROM " + TABLE_RECORDS + " r"
+                + " JOIN " + TABLE_CATEGORIES + " c ON r." + KEY_CATEGORY_ID + " = c." + KEY_ID
+                + " WHERE r." + KEY_DATE + " >= ? AND r." + KEY_DATE + " <= ?"
+                + " GROUP BY c." + KEY_ID
+                + " ORDER BY (expense + income) DESC";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(query, new String[]{startDate, endDate});
+        if (cursor.moveToFirst()) {
+            do {
+                CategoryStatBoth stat = new CategoryStatBoth();
+                stat.categoryId = cursor.getLong(0);
+                stat.categoryName = cursor.getString(1);
+                stat.categoryIcon = cursor.getString(2);
+                stat.categoryColor = cursor.getInt(3);
+                stat.expense = cursor.getDouble(4);
+                stat.income = cursor.getDouble(5);
+                result.add(stat);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return result;
+    }
+
+    /**
+     * 5.6 新增：按日期范围查询每个标签的支出和收入
+     * 标签存储格式为 "#标签1 #标签2" 这样的空格分隔字符串
+     */
+    public List<TagStat> getTagStatsForDateRange(String startDate, String endDate) {
+        // 先查出范围内所有带标签的记录
+        java.util.Map<String, TagStat> tagMap = new java.util.LinkedHashMap<>();
+        String query = "SELECT r." + KEY_TYPE + ", r." + KEY_AMOUNT + ", r." + KEY_TAGS
+                + " FROM " + TABLE_RECORDS + " r"
+                + " WHERE r." + KEY_DATE + " >= ? AND r." + KEY_DATE + " <= ?"
+                + " AND r." + KEY_TAGS + " IS NOT NULL AND r." + KEY_TAGS + " != ''";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(query, new String[]{startDate, endDate});
+        if (cursor.moveToFirst()) {
+            do {
+                int type = cursor.getInt(0);
+                double amount = cursor.getDouble(1);
+                String tagsStr = cursor.getString(2);
+                if (tagsStr == null || tagsStr.isEmpty()) continue;
+                // 按空格分隔多个标签
+                String[] tags = tagsStr.trim().split("\\s+");
+                for (String tag : tags) {
+                    if (tag.isEmpty()) continue;
+                    String key = tag.startsWith("#") ? tag : "#" + tag;
+                    TagStat stat = tagMap.get(key);
+                    if (stat == null) {
+                        stat = new TagStat();
+                        stat.tag = key;
+                        stat.expense = 0;
+                        stat.income = 0;
+                        tagMap.put(key, stat);
+                    }
+                    if (type == Record.TYPE_EXPENSE) {
+                        stat.expense += amount;
+                    } else {
+                        stat.income += amount;
+                    }
+                }
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        // 转换为列表并按总额降序排序
+        List<TagStat> result = new ArrayList<>(tagMap.values());
+        java.util.Collections.sort(result, (a, b) ->
+                Double.compare(b.expense + b.income, a.expense + a.income));
+        return result;
+    }
+
+    /** 5.6 新增：分类统计（同时包含支出和收入） */
+    public static class CategoryStatBoth {
+        public long categoryId;
+        public String categoryName;
+        public String categoryIcon;
+        public int categoryColor;
+        public double expense;
+        public double income;
+    }
+
+    /** 5.6 新增：标签统计 */
+    public static class TagStat {
+        public String tag;
+        public double expense;
+        public double income;
     }
 
     public long addProject(Project project) {

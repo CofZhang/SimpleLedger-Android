@@ -204,6 +204,12 @@ public class RecordsFragment extends Fragment {
             dialog.dismiss();
             etSearch.requestFocus();
         });
+        // 5.6 自定义日期范围入口
+        dialogView.findViewById(R.id.itemDateRange).setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            dialog.dismiss();
+            startActivity(new Intent(getActivity(), DateRangeActivity.class));
+        });
         // 4.5 设置入口
         dialogView.findViewById(R.id.itemSettings).setOnClickListener(v -> {
             HapticHelper.light(getContext());
@@ -390,13 +396,15 @@ public class RecordsFragment extends Fragment {
     private void loadData() {
         String yearMonth = new SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(currentMonth.getTime());
         String displayMonth = new SimpleDateFormat("yyyy年M月", Locale.getDefault()).format(currentMonth.getTime());
-        tvMonth.setText(displayMonth);
 
         records.clear();
         if (searching) {
+            // 5.6 搜索时：标题改为"搜索结果"，汇总显示搜索结果的总收支
             records.addAll(dbHelper.searchRecords(searchKeyword));
+            tvMonth.setText("搜索结果");
         } else {
             records.addAll(dbHelper.getRecordsByMonth(yearMonth));
+            tvMonth.setText(displayMonth);
         }
         adapter.updateData(records);
         updateSummary();
@@ -416,6 +424,12 @@ public class RecordsFragment extends Fragment {
         if (records.isEmpty()) {
             tvEmpty.setVisibility(View.VISIBLE);
             rvRecords.setVisibility(View.GONE);
+            // 5.6 搜索无结果时显示更友好的提示
+            if (searching) {
+                tvEmpty.setText("未找到匹配「" + searchKeyword + "」的记录");
+            } else {
+                tvEmpty.setText("暂无记录，点击中间按钮记一笔");
+            }
         } else {
             tvEmpty.setVisibility(View.GONE);
             rvRecords.setVisibility(View.VISIBLE);

@@ -41,7 +41,7 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHold
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Project project = projects.get(position);
         holder.tvName.setText(project.getName());
-        
+
         if (project.getDescription() != null && !project.getDescription().isEmpty()) {
             holder.tvDesc.setText(project.getDescription());
             holder.tvDesc.setVisibility(View.VISIBLE);
@@ -49,9 +49,16 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHold
             holder.tvDesc.setVisibility(View.GONE);
         }
 
+        // 5.6 同时获取支出和收入
         double totalExpense = dbHelper.getProjectExpense(project.getId());
+        double totalIncome = dbHelper.getProjectIncome(project.getId());
         List<Record> records = dbHelper.getRecordsByProject(project.getId());
-        holder.tvTotal.setText(String.format("总支出: ¥%.2f", totalExpense));
+
+        // 右上角显示结余（收入-支出）
+        double balance = totalIncome - totalExpense;
+        holder.tvTotal.setText(String.format("结余 ¥%.2f", balance));
+        holder.tvExpense.setText(String.format("支出 ¥%.2f", totalExpense));
+        holder.tvIncome.setText(String.format("收入 ¥%.2f", totalIncome));
         holder.tvCount.setText(String.format("%d笔记录", records.size()));
 
         holder.itemView.setOnClickListener(v -> {
@@ -79,7 +86,7 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHold
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvDesc, tvTotal, tvCount;
+        TextView tvName, tvDesc, tvTotal, tvCount, tvExpense, tvIncome;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -87,6 +94,8 @@ public class ProjectAdapter extends RecyclerView.Adapter<ProjectAdapter.ViewHold
             tvDesc = itemView.findViewById(R.id.tvProjectDesc);
             tvTotal = itemView.findViewById(R.id.tvProjectTotal);
             tvCount = itemView.findViewById(R.id.tvRecordCount);
+            tvExpense = itemView.findViewById(R.id.tvProjectExpense);
+            tvIncome = itemView.findViewById(R.id.tvProjectIncome);
         }
     }
 }
