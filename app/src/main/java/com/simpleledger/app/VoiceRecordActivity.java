@@ -2,6 +2,7 @@ package com.simpleledger.app;
 
 import android.Manifest;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -19,6 +20,7 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
@@ -42,9 +44,14 @@ import java.util.regex.Pattern;
  *  - 失败时给出清晰提示和解决建议
  */
 public class VoiceRecordActivity extends AppCompatActivity {
+    private static final String PREF_NAME = "voice_engine";
+    private static final String KEY_ENGINE_PKG = "engine_pkg";
+    private static final String KEY_ENGINE_CLS = "engine_cls";
+    private static final String KEY_ENGINE_LABEL = "engine_label";
+
     private LinearLayout topNav;
-    private Button btnSpeak, btnUse, btnExpense, btnIncome;
-    private TextView tvResult, tvParsedAmount, tvParsedRemark, tvHint;
+    private Button btnSpeak, btnUse, btnExpense, btnIncome, btnEngine;
+    private TextView tvResult, tvParsedAmount, tvParsedRemark, tvHint, tvEngine;
     private ProgressBar progressRecord;
     private double parsedAmount = 0;
     private String parsedRemark = "";
@@ -54,6 +61,9 @@ public class VoiceRecordActivity extends AppCompatActivity {
     private boolean isListening = false;
     private int retryCount = 0;
     private static final int MAX_RETRY = 1;
+    // 6.4 当前选中的引擎（null=系统默认）
+    private ComponentName selectedEngine = null;
+    private String selectedEngineLabel = "系统默认";
 
     // 6.1 运行时请求 RECORD_AUDIO 权限
     private final ActivityResultLauncher<String> audioPermissionLauncher =
@@ -88,12 +98,24 @@ public class VoiceRecordActivity extends AppCompatActivity {
         btnUse = findViewById(R.id.btnUse);
         btnExpense = findViewById(R.id.btnExpense);
         btnIncome = findViewById(R.id.btnIncome);
+        btnEngine = findViewById(R.id.btnEngine);
         tvResult = findViewById(R.id.tvResult);
         tvParsedAmount = findViewById(R.id.tvParsedAmount);
         tvParsedRemark = findViewById(R.id.tvParsedRemark);
         tvHint = findViewById(R.id.tvHint);
+        tvEngine = findViewById(R.id.tvEngine);
         progressRecord = findViewById(R.id.progressRecord);
         progressRecord.setVisibility(View.GONE);
+
+        // 6.4 加载已保存的语音识别引擎
+        loadSavedEngine();
+        updateEngineLabel();
+
+        // 6.4 引擎选择按钮
+        btnEngine.setOnClickListener(v -> {
+            HapticHelper.light(this);
+            showEnginePicker();
+        });
 
         initSpeechRecognizer();
 
@@ -152,12 +174,16 @@ public class VoiceRecordActivity extends AppCompatActivity {
     }
 
     /**
-     * 6.4 初始化 SpeechRecognizer，显式尝试厂商自带 RecognitionService
+     * 6.4 初始化 SpeechRecognizer
+     * 优先使用用户选择的引擎，其次尝试厂商自带服务，最后用系统默认
      */
     private void initSpeechRecognizer() {
         try {
-            // 尝试厂商自带的 RecognitionService
-            ComponentName service = findBestRecognitionService();
+            ComponentName service = selectedEngine;
+            // 如果用户没选过，尝试厂商自带服务
+            if (service == null) {
+                service = findBestRecognitionService();
+            }
             if (service != null) {
                 try {
                     speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this, service);
@@ -170,6 +196,127 @@ public class VoiceRecordActivity extends AppCompatActivity {
             speechRecognizer.setRecognitionListener(new SpeechListener());
         } catch (Exception e) {
             speechRecognizer = null;
+        }
+    }
+
+    /** 6.4 加载用户保存的语音识别引擎 */
+    private void loadSavedEngine() {
+        try {
+            android.content.SharedPreferences sp = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+            String pkg = sp.getString(KEY_ENGINE_PKG, "");
+            String cls = sp.getString(KEY_ENGINE_CLS, "");
+            String label = sp.getString(KEY_ENGINE_LABEL, "系统默认");
+            if (!pkg.isEmpty() && !cls.isEmpty()) {
+                selectedEngine = new ComponentName(pkg, cls);
+            } else {
+                selectedEngine = null;
+            }
+            selectedEngineLabel = label;
+        } catch (Exception ignored) {
+            selectedEngine = null;
+            selectedEngineLabel = "系统默认";
+        }
+    }
+
+    /** 6.4 保存用户选择的引擎 */
+    private void saveEngine(ComponentName cn, String label) {
+        selectedEngine = cn;
+        selectedEngineLabel = label;
+        android.content.SharedPreferences sp = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        android.content.SharedPreferences.Editor ed = sp.edit();
+        if (cn != null) {
+            ed.putString(KEY_ENGINE_PKG, cn.getPackageName());
+            ed.putString(KEY_ENGINE_CLS, cn.getClassName());
+        } else {
+            ed.remove(KEY_ENGINE_PKG);
+            ed.remove(KEY_ENGINE_CLS);
+        }
+        ed.putString(KEY_ENGINE_LABEL, label);
+        ed.apply();
+    }
+
+    /** 6.4 更新引擎显示标签 */
+    private void updateEngineLabel() {
+        if (tvEngine != null) {
+            tvEngine.setText("当前引擎：" + selectedEngineLabel);
+        }
+    }
+
+    /** 6.4 弹窗让用户选择语音识别引擎 */
+    private void showEnginePicker() {
+        List<ResolveInfo> services = listAllRecognitionServices();
+        List<String> labels = new ArrayList<>();
+        List<ComponentName> components = new ArrayList<>();
+
+        // 第一项：系统默认
+        labels.add("系统默认");
+        components.add(null);
+
+        // 枚举所有可用服务
+        if (services != null) {
+            for (ResolveInfo ri : services) {
+                if (ri.serviceInfo == null) continue;
+                ComponentName cn = new ComponentName(ri.serviceInfo.packageName, ri.serviceInfo.name);
+                String label = ri.loadLabel(getPackageManager()).toString();
+                if (label.isEmpty()) {
+                    label = ri.serviceInfo.packageName;
+                }
+                // 友好显示常见输入法
+                if (ri.serviceInfo.packageName.contains("doubao") || ri.serviceInfo.packageName.contains("bytedance")) {
+                    label = "豆包输入法语音";
+                } else if (ri.serviceInfo.packageName.contains("iflytek")) {
+                    label = "讯飞语音";
+                } else if (ri.serviceInfo.packageName.contains("sogou")) {
+                    label = "搜狗语音";
+                } else if (ri.serviceInfo.packageName.contains("baidu")) {
+                    label = "百度语音";
+                } else if (ri.serviceInfo.packageName.contains("vivo")) {
+                    label = "vivo 语音";
+                } else if (ri.serviceInfo.packageName.contains("huawei") || ri.serviceInfo.packageName.contains("emui")) {
+                    label = "华为语音";
+                } else if (ri.serviceInfo.packageName.contains("miui") || ri.serviceInfo.packageName.contains("xiaomi")) {
+                    label = "小米语音";
+                } else if (ri.serviceInfo.packageName.contains("google")) {
+                    label = "Google 语音";
+                }
+                labels.add(label + "\n(" + ri.serviceInfo.packageName + ")");
+                components.add(cn);
+            }
+        }
+
+        if (labels.size() == 1) {
+            Toast.makeText(this, "手机上没有可用的语音识别引擎，请安装豆包输入法/讯飞输入法等", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        String[] arr = labels.toArray(new String[0]);
+        new AlertDialog.Builder(this)
+                .setTitle("选择语音识别引擎")
+                .setMessage("如果默认引擎不可用，请尝试其他引擎（如豆包输入法、讯飞等）")
+                .setItems(arr, (d, which) -> {
+                    ComponentName cn = components.get(which);
+                    String label = which == 0 ? "系统默认" : labels.get(which).split("\n")[0];
+                    saveEngine(cn, label);
+                    updateEngineLabel();
+                    // 重建 SpeechRecognizer
+                    if (speechRecognizer != null) {
+                        try { speechRecognizer.destroy(); } catch (Exception ignored) {}
+                        speechRecognizer = null;
+                    }
+                    initSpeechRecognizer();
+                    Toast.makeText(this, "已切换为：" + label, Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    /** 6.4 列出手机上所有提供 ACTION_RECOGNIZE_SPEECH 的服务 */
+    private List<ResolveInfo> listAllRecognitionServices() {
+        try {
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            return getPackageManager().queryIntentServices(intent, 0);
+        } catch (Exception e) {
+            return null;
         }
     }
 
