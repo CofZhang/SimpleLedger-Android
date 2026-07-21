@@ -1,97 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 5.0 调整：备注小字移到分类名称下方、日期上方，浅灰色小字 -->
+<!-- 5.5 紧凑单行布局：小图标(24dp) + 分类名/备注 + 金额，单行高度 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="12dp"
-    android:layout_marginEnd="12dp"
-    android:layout_marginBottom="8dp"
+    android:layout_marginStart="14dp"
+    android:layout_marginEnd="14dp"
+    android:layout_marginBottom="2dp"
     android:background="@drawable/bg_glass_card"
+    android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="16dp">
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+    android:minHeight="44dp">
 
+    <!-- 小分类图标（24dp，靠左对齐） -->
     <TextView
         android:id="@+id/tvCategoryIcon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
         android:background="@drawable/circle_bg"
         android:gravity="center"
         android:textColor="@color/white"
-        android:textSize="22sp" />
+        android:textSize="13sp" />
 
+    <!-- 中间：分类名 + 备注（同一行，分类名后跟备注小字） -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
+        android:layout_marginStart="10dp"
         android:layout_weight="1"
-        android:orientation="vertical">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-        <!-- 第一行：分类名称 + 重要标记 + 项目标签 -->
-        <LinearLayout
+        <TextView
+            android:id="@+id/tvCategory"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
-            <TextView
-                android:id="@+id/tvCategory"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp"
-                android:textStyle="bold" />
+        <TextView
+            android:id="@+id/tvImportant"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:text="⭐"
+            android:textSize="10sp"
+            android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/tvImportant"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:text="⭐"
-                android:textSize="12sp"
-                android:visibility="gone" />
+        <TextView
+            android:id="@+id/tvProjectTag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_project_tag"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="9sp"
+            android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/tvProjectTag"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_project_tag"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:paddingTop="2dp"
-                android:paddingBottom="2dp"
-                android:textColor="@color/text_secondary"
-                android:textSize="10sp"
-                android:visibility="gone" />
-        </LinearLayout>
-
-        <!-- 5.0 第二行：备注小字（浅灰色，位于分类名称下方、日期上方） -->
+        <!-- 备注小字（跟在分类名后面，浅灰色，单行省略） -->
         <TextView
             android:id="@+id/tvRemark"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
             android:textColor="@color/text_hint"
             android:textSize="11sp"
             android:maxLines="1"
             android:ellipsize="end"
             android:visibility="gone" />
-
-        <!-- 第三行：日期 -->
-        <TextView
-            android:id="@+id/tvDate"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp" />
     </LinearLayout>
 
+    <!-- 右侧金额（单行） -->
     <TextView
         android:id="@+id/tvAmount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="18sp"
+        android:layout_marginStart="8dp"
+        android:textSize="15sp"
         android:textStyle="bold" />
+
+    <!-- 隐藏的日期（保留 id 以兼容旧适配器，但 5.5 分组模式不再显示） -->
+    <TextView
+        android:id="@+id/tvDate"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
 
 </LinearLayout>

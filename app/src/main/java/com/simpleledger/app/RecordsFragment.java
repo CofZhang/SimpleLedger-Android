@@ -1,6 +1,7 @@
 package com.simpleledger.app;
 
 import android.app.DatePickerDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -14,6 +15,7 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -117,6 +119,23 @@ public class RecordsFragment extends Fragment {
         view.findViewById(R.id.btnMore).setOnClickListener(v -> {
             HapticHelper.light(getContext());
             showMoreDialog();
+        });
+
+        // 5.5 搜索按钮：默认折叠，点击展开/折叠搜索栏
+        view.findViewById(R.id.btnSearch).setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            if (etSearch.getVisibility() == View.VISIBLE) {
+                // 已展开 → 折叠并清空
+                etSearch.setText("");
+                etSearch.setVisibility(View.GONE);
+            } else {
+                etSearch.setVisibility(View.VISIBLE);
+                etSearch.requestFocus();
+                // 弹出输入法
+                InputMethodManager imm = (InputMethodManager)
+                        getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) imm.showSoftInput(etSearch, 0);
+            }
         });
 
         // 搜索框

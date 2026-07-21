@@ -1,152 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 5.5 紧凑高效布局：顶部汇总整合到标题栏，搜索栏默认折叠，账单列表占据更大空间 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@android:color/transparent">
 
-    <!-- 1. 顶部导航栏（全宽矩形玻璃条，高度56dp，无圆角）
-         4.6 修复：添加 id topNav，由代码动态添加状态栏高度的 paddingTop，
-         确保三点菜单按钮完整显示在状态栏下方 -->
+    <!-- 1. 顶部导航栏：标题 + 月份切换 + 汇总（全部整合到一行） -->
     <LinearLayout
         android:id="@+id/topNav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_gradient_header"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingTop="0dp"
-        android:paddingBottom="0dp"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:minHeight="56dp">
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp">
 
-        <ImageButton
-            android:id="@+id/btnMore"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_marginTop="14dp"
-            android:layout_marginBottom="14dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_more"
-            android:scaleType="centerInside"
-            android:tint="@color/text_primary" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="@string/app_name"
-            android:textColor="@color/text_primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <ImageButton
-            android:id="@+id/btnBudget"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_marginTop="14dp"
-            android:layout_marginBottom="14dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_my_calendar"
-            android:scaleType="centerInside"
-            android:tint="@color/text_primary" />
-    </LinearLayout>
-
-    <!-- 2. 搜索栏（玻璃胶囊） -->
-    <EditText
-        android:id="@+id/etSearch"
-        android:layout_width="match_parent"
-        android:layout_height="44dp"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/bg_glass_capsule"
-        android:drawableStart="@android:drawable/ic_menu_search"
-        android:drawablePadding="8dp"
-        android:hint="搜索：金额、分类、账户、标签、备注"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
-        android:singleLine="true"
-        android:textColor="@color/text_primary"
-        android:textColorHint="@color/text_hint"
-        android:textSize="13sp" />
-
-    <!-- 3. 月份切换栏（玻璃胶囊条） -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginTop="12dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <ImageButton
-            android:id="@+id/btnPrevMonth"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_media_previous"
-            android:tint="@color/text_secondary" />
-
-        <TextView
-            android:id="@+id/tvMonth"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/bg_glass_capsule"
-            android:gravity="center"
-            android:text="2026年7月"
-            android:textColor="@color/text_primary"
-            android:textSize="15sp"
-            android:textStyle="bold" />
-
-        <ImageButton
-            android:id="@+id/btnNextMonth"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_media_next"
-            android:tint="@color/text_secondary" />
-
-        <ImageButton
-            android:id="@+id/btnCalendar"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_today"
-            android:tint="@color/text_secondary" />
-    </LinearLayout>
-
-    <!-- 4. 收支结余大玻璃卡片 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginTop="16dp"
-        android:background="@drawable/bg_glass_card"
-        android:orientation="horizontal"
-        android:padding="20dp"
-        android:elevation="6dp">
-
+        <!-- 第一行：更多按钮 + 月份切换 + 搜索 + 预算 + 日历 -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btnMore"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_more"
+                android:scaleType="centerInside"
+                android:tint="@color/text_primary" />
+
+            <ImageButton
+                android:id="@+id/btnPrevMonth"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_media_previous"
+                android:tint="@color/text_secondary" />
+
+            <TextView
+                android:id="@+id/tvMonth"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_glass_capsule"
+                android:gravity="center"
+                android:text="2026年7月"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btnNextMonth"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_media_next"
+                android:tint="@color/text_secondary" />
+
+            <ImageButton
+                android:id="@+id/btnSearch"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_search"
+                android:scaleType="centerInside"
+                android:tint="@color/text_primary" />
+
+            <ImageButton
+                android:id="@+id/btnCalendar"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_today"
+                android:tint="@color/text_secondary" />
+
+            <ImageButton
+                android:id="@+id/btnBudget"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_my_calendar"
+                android:tint="@color/text_secondary" />
+        </LinearLayout>
+
+        <!-- 第二行：支出/收入/结余 汇总（紧凑单行） -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="支出"
+                android:text="支出 "
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 
@@ -154,30 +112,22 @@
                 android:id="@+id/tvMonthExpense"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
                 android:text="¥0.00"
                 android:textColor="@color/expense_color"
-                android:textSize="20sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
-        </LinearLayout>
 
-        <View
-            android:layout_width="1dp"
-            android:layout_height="48dp"
-            android:layout_gravity="center_vertical"
-            android:background="@color/divider_glass" />
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
+            <View
+                android:layout_width="1dp"
+                android:layout_height="12dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
+                android:background="@color/divider_glass" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="收入"
+                android:text="收入 "
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 
@@ -185,83 +135,85 @@
                 android:id="@+id/tvMonthIncome"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
                 android:text="¥0.00"
                 android:textColor="@color/income_color"
-                android:textSize="20sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
-        </LinearLayout>
 
-        <View
-            android:layout_width="1dp"
-            android:layout_height="48dp"
-            android:layout_gravity="center_vertical"
-            android:background="@color/divider_glass" />
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
+            <View
+                android:layout_width="1dp"
+                android:layout_height="12dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
+                android:background="@color/divider_glass" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="结余"
+                android:text="结余 "
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/tvBalance"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_weight="1"
                 android:text="¥0.00"
                 android:textColor="@color/balance_color"
-                android:textSize="20sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvBudgetInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:visibility="gone" />
         </LinearLayout>
+
+        <!-- 预算进度条（紧凑细条） -->
+        <ProgressBar
+            android:id="@+id/progressBudget"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:layout_marginTop="4dp"
+            android:max="100"
+            android:progressTint="@color/colorPrimary"
+            android:visibility="gone" />
+
+        <!-- 搜索栏（默认折叠，点击搜索按钮才展开） -->
+        <EditText
+            android:id="@+id/etSearch"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_glass_capsule"
+            android:drawableStart="@android:drawable/ic_menu_search"
+            android:drawablePadding="6dp"
+            android:hint="搜索：金额、分类、账户、标签、备注"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:singleLine="true"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_hint"
+            android:textSize="12sp"
+            android:visibility="gone" />
     </LinearLayout>
 
-    <!-- 预算进度条 -->
-    <ProgressBar
-        android:id="@+id/progressBudget"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="6dp"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginTop="12dp"
-        android:max="100"
-        android:progressTint="@color/colorPrimary"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/tvBudgetInfo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginTop="4dp"
-        android:textColor="@color/text_secondary"
-        android:textSize="11sp"
-        android:visibility="gone" />
-
-    <!-- 5. 记录列表/空白状态 -->
+    <!-- 2. 记录列表/空白状态（占据剩余空间） -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="12dp">
+        android:layout_weight="1">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvRecords"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
             android:paddingBottom="100dp" />
 
         <TextView
