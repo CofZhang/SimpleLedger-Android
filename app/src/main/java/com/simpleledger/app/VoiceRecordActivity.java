@@ -87,11 +87,9 @@ public class VoiceRecordActivity extends AppCompatActivity {
         tvParsedRemark = findViewById(R.id.tvParsedRemark);
         tvHint = findViewById(R.id.tvHint);
 
-        // 检查是否支持语音识别
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            tvHint.setText("当前设备不支持语音识别，请使用其他功能");
-            btnSpeak.setEnabled(false);
-        } else {
+        // 6.2 修复：不再使用 isRecognitionAvailable 判断（国产手机无 Google 服务会误报不支持）
+        // 直接创建 SpeechRecognizer，由 onError 回调处理实际错误
+        try {
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
             speechRecognizer.setRecognitionListener(new RecognitionListener() {
                 @Override
@@ -114,12 +112,17 @@ public class VoiceRecordActivity extends AppCompatActivity {
                 public void onError(int error) {
                     String msg;
                     switch (error) {
-                        case SpeechRecognizer.ERROR_NO_MATCH: msg = "未识别到内容"; break;
-                        case SpeechRecognizer.ERROR_SPEECH_TIMEOUT: msg = "超时未说话"; break;
+                        case SpeechRecognizer.ERROR_NO_MATCH: msg = "未识别到内容，请重试"; break;
+                        case SpeechRecognizer.ERROR_SPEECH_TIMEOUT: msg = "超时未说话，请重试"; break;
                         case SpeechRecognizer.ERROR_AUDIO: msg = "音频错误"; break;
-                        case SpeechRecognizer.ERROR_RECOGNIZER_BUSY: msg = "识别器忙"; break;
+                        case SpeechRecognizer.ERROR_RECOGNIZER_BUSY: msg = "识别器忙，请稍后"; break;
                         case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS: msg = "需要麦克风权限"; break;
-                        default: msg = "识别错误（" + error + "）"; break;
+                        case SpeechRecognizer.ERROR_NETWORK: msg = "网络错误，语音识别需要联网"; break;
+                        case SpeechRecognizer.ERROR_NETWORK_TIMEOUT: msg = "网络超时，请重试"; break;
+                        case SpeechRecognizer.ERROR_SERVER: msg = "服务器错误，请稍后重试"; break;
+                        case SpeechRecognizer.ERROR_CLIENT: msg = "客户端错误，请重试"; break;
+                        case SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED: msg = "语言不支持"; break;
+                        default: msg = "识别错误（" + error + "），请重试"; break;
                     }
                     tvHint.setText(msg);
                     btnSpeak.setEnabled(true);
@@ -143,11 +146,22 @@ public class VoiceRecordActivity extends AppCompatActivity {
                 @Override
                 public void onEvent(int eventType, Bundle params) {}
             });
+        } catch (Exception e) {
+            tvHint.setText("无法初始化语音识别：" + e.getMessage());
+            btnSpeak.setEnabled(false);
         }
 
         btnSpeak.setOnClickListener(v -> {
             HapticHelper.medium(this);
-            if (speechRecognizer == null) return;
+            if (speechRecognizer == null) {
+                // 6.2 兜底：尝试重新创建
+                try {
+                    speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+                } catch (Exception e) {
+                    Toast.makeText(this, "无法启动语音识别", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
             // 6.1 先检查 RECORD_AUDIO 权限，未授权则请求
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                     == PackageManager.PERMISSION_GRANTED) {
