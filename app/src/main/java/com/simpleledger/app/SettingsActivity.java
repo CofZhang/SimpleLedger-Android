@@ -1,6 +1,8 @@
 package com.simpleledger.app;
 
 import android.Manifest;
+import android.app.AlarmManager;
+import android.app.NotificationManager;
 import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -17,6 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -50,8 +53,10 @@ public class SettingsActivity extends AppCompatActivity {
 
     // 5.8 通知权限请求 launcher（Android 13+）
     private ActivityResultLauncher<String> requestNotificationPermissionLauncher;
-    // 5.8 触觉反馈等待权限的回调标记
+    // 6.3 触觉反馈等待权限的回调标记
     private boolean pendingHapticEnabled = false;
+    // 6.3 标记：是否正在等待通知权限回调（避免开关回调递归）
+    private boolean pendingNotificationPermission = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,24 +70,22 @@ public class SettingsActivity extends AppCompatActivity {
         requestNotificationPermissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(),
                 isGranted -> {
+                    pendingNotificationPermission = false;
                     if (isGranted) {
-                        ReminderReceiver.setReminder(this, true, ReminderReceiver.getHour(this), ReminderReceiver.getMinute(this));
-                        tvReminderTime.setEnabled(true);
-                        findViewById(R.id.itemReminderTime).setAlpha(1.0f);
-                        Toast.makeText(this, "已开启每日提醒", Toast.LENGTH_SHORT).show();
+                        // 6.3 权限已授予，再次确认通知总开关和闹钟权限，然后真正开启提醒
+                        tryEnableReminder(true);
                     } else {
+                        // 用户拒绝，开关设回关闭
                         swReminder.setChecked(false);
                         Toast.makeText(this, "未授予通知权限，无法显示提醒", Toast.LENGTH_LONG).show();
-                        // 引导用户去系统设置开启通知权限
+                        // 6.3 引导用户去系统设置开启通知权限
                         new AlertDialog.Builder(this)
                                 .setTitle("需要通知权限")
-                                .setMessage("记账提醒需要通知权限才能在通知栏显示，是否前往系统设置开启？")
-                                .setPositiveButton(R.string.confirm, (d, w) -> {
-                                    Intent intent = new Intent();
-                                    intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-                                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
-                                    startActivity(intent);
-                                })
+                                .setMessage("记账提醒需要通知权限才能在通知栏显示。\n\n" +
+                                        "另外部分手机（小米/华为/OPPO等）还需要在系统设置中" +
+                                        "允许\"允许通知\"、\"锁屏通知\"、\"横幅通知\"、\"悬浮通知\"。\n\n" +
+                                        "是否前往系统通知设置？")
+                                .setPositiveButton(R.string.confirm, (d, w) -> openAppNotificationSettings())
                                 .setNegativeButton(R.string.cancel, null)
                                 .show();
                     }
@@ -115,20 +118,8 @@ public class SettingsActivity extends AppCompatActivity {
         swReminder.setOnCheckedChangeListener((button, checked) -> {
             HapticHelper.light(this);
             if (checked) {
-                // 5.8 Android 13+ 需要运行时请求 POST_NOTIFICATIONS 权限
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                            != PackageManager.PERMISSION_GRANTED) {
-                        // 先暂时保持开关关闭，等待权限回调
-                        requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
-                        return;
-                    }
-                }
-                // 已有权限，直接开启提醒
-                ReminderReceiver.setReminder(this, true, hour, minute);
-                tvReminderTime.setEnabled(true);
-                findViewById(R.id.itemReminderTime).setAlpha(1.0f);
-                Toast.makeText(this, "已开启每日提醒", Toast.LENGTH_SHORT).show();
+                // 6.3 开启提醒前需要多重检查
+                tryEnableReminder(false);
             } else {
                 ReminderReceiver.setReminder(this, false, hour, minute);
                 tvReminderTime.setEnabled(false);
@@ -148,6 +139,11 @@ public class SettingsActivity extends AppCompatActivity {
                 tvReminderTime.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m));
             }, hour, minute, true).show();
         });
+
+        // 6.3 如果之前已开启提醒，App 启动时检查通知权限是否还在，丢失则重新申请
+        if (reminderEnabled) {
+            ensureNotificationPermissionSilent();
+        }
 
         // 触觉反馈开关
         swHaptic.setChecked(HapticHelper.isEnabled(this));
@@ -206,6 +202,124 @@ public class SettingsActivity extends AppCompatActivity {
                     .setNegativeButton(R.string.cancel, null)
                     .show();
         });
+    }
+
+    /**
+     * 6.3 尝试开启提醒（多重权限检查）
+     * @param fromPermissionCallback true=从权限回调中调用（已请求过权限），false=用户刚点击开关
+     */
+    private void tryEnableReminder(boolean fromPermissionCallback) {
+        // 1) Android 13+ 检查 POST_NOTIFICATIONS 运行时权限
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (fromPermissionCallback) {
+                // 回调中仍然没有权限（用户拒绝），开关设回关闭
+                swReminder.setChecked(false);
+                showNotificationSettingsDialog();
+            } else if (!pendingNotificationPermission) {
+                // 首次点击开关，请求权限（像相机/麦克风一样弹窗）
+                pendingNotificationPermission = true;
+                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+            return;
+        }
+
+        // 2) 检查通知总开关（国产 ROM 经常默认关闭）
+        if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+            // 通知被系统禁用，引导去系统设置
+            new AlertDialog.Builder(this)
+                    .setTitle("需要开启通知")
+                    .setMessage("系统通知被禁用，记账提醒无法显示。\n\n" +
+                            "请前往系统设置开启\"允许通知\"，并建议同时开启" +
+                            "\"锁屏通知\"、\"横幅通知\"、\"悬浮通知\"。\n\n" +
+                            "是否前往设置？")
+                    .setPositiveButton(R.string.confirm, (d, w) -> openAppNotificationSettings())
+                    .setNegativeButton(R.string.cancel, (d, w) -> swReminder.setChecked(false))
+                    .setOnCancelListener(d -> swReminder.setChecked(false))
+                    .show();
+            // 先保存开关为开启状态，但提醒实际是否生效取决于用户是否去系统设置开启
+            ReminderReceiver.setReminder(this, true, ReminderReceiver.getHour(this), ReminderReceiver.getMinute(this));
+            tvReminderTime.setEnabled(true);
+            findViewById(R.id.itemReminderTime).setAlpha(1.0f);
+            return;
+        }
+
+        // 3) Android 12+ 检查 SCHEDULE_EXACT_ALARM 权限（setAlarmClock 不需要，但保险起见检查）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+            if (am != null && !am.canScheduleExactAlarms()) {
+                new AlertDialog.Builder(this)
+                        .setTitle("需要精确闹钟权限")
+                        .setMessage("Android 12+ 需要授予\"闹钟和提醒\"权限才能准时触发记账提醒。\n\n是否前往设置？")
+                        .setPositiveButton(R.string.confirm, (d, w) -> {
+                            try {
+                                Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                                intent.setData(Uri.parse("package:" + getPackageName()));
+                                startActivity(intent);
+                            } catch (Exception e) {
+                                openAppNotificationSettings();
+                            }
+                        })
+                        .setNegativeButton(R.string.cancel, (d, w) -> swReminder.setChecked(false))
+                        .setOnCancelListener(d -> swReminder.setChecked(false))
+                        .show();
+                return;
+            }
+        }
+
+        // 4) 所有权限齐全，真正开启提醒
+        ReminderReceiver.setReminder(this, true, ReminderReceiver.getHour(this), ReminderReceiver.getMinute(this));
+        tvReminderTime.setEnabled(true);
+        findViewById(R.id.itemReminderTime).setAlpha(1.0f);
+        Toast.makeText(this, "已开启每日提醒", Toast.LENGTH_SHORT).show();
+    }
+
+    /** 6.3 静默检查：App 启动时如果提醒已开启，确保权限还在 */
+    private void ensureNotificationPermissionSilent() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            // 权限丢失，重新申请
+            pendingNotificationPermission = true;
+            requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            return;
+        }
+        // 通知被关闭后重新打开时，重新注册闹钟（防止闹钟丢失）
+        if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+            ReminderReceiver.scheduleNextDay(this);
+        }
+    }
+
+    /** 6.3 打开系统应用通知设置页 */
+    private void openAppNotificationSettings() {
+        try {
+            Intent intent = new Intent();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+            } else {
+                intent.setAction("android.settings.APPLICATION_DETAILS_SETTINGS");
+                intent.setData(Uri.parse("package:" + getPackageName()));
+            }
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "无法打开设置，请手动前往设置-应用-咖啡记账-通知",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /** 6.3 显示通知权限被拒绝的引导对话框 */
+    private void showNotificationSettingsDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("需要通知权限")
+                .setMessage("记账提醒需要通知权限才能在通知栏显示。\n\n" +
+                        "部分手机（小米/华为/OPPO等）还需要在系统设置中" +
+                        "允许\"允许通知\"、\"锁屏通知\"、\"横幅通知\"、\"悬浮通知\"。\n\n" +
+                        "是否前往系统通知设置？")
+                .setPositiveButton(R.string.confirm, (d, w) -> openAppNotificationSettings())
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     // 5.3 SAF 回调：处理导出/导入

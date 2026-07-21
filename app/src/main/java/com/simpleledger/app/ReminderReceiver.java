@@ -9,8 +9,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.PowerManager;
+import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import android.preference.PreferenceManager;
 
 /**
@@ -33,6 +35,7 @@ public class ReminderReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        Log.d("ReminderReceiver", "onReceive 触发，时间=" + System.currentTimeMillis());
         // 5.9 获取 WakeLock 保证 CPU 唤醒足够长时间来显示通知
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         PowerManager.WakeLock wakeLock = null;
@@ -42,7 +45,15 @@ public class ReminderReceiver extends BroadcastReceiver {
         }
 
         try {
-            showNotification(context);
+            // 6.3 检查通知权限，没权限就跳过（避免在某些机型上抛 SecurityException）
+            if (NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+                showNotification(context);
+                Log.d("ReminderReceiver", "通知已显示");
+            } else {
+                Log.w("ReminderReceiver", "通知被系统禁用，跳过显示");
+            }
+        } catch (Exception e) {
+            Log.e("ReminderReceiver", "显示通知失败", e);
         } finally {
             // 5.9 自动注册明天的提醒
             scheduleNextDay(context);

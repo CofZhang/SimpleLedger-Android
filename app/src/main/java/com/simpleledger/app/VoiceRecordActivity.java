@@ -1,19 +1,18 @@
 package com.simpleledger.app;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
-import android.speech.SpeechRecognizer;
-import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,16 +22,18 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 6.0 语音记账：使用系统 SpeechRecognizer 识别语音，
+ * 6.0 语音记账：使用系统语音识别 Intent 识别语音，
  * 解析"金额 + 分类关键词"，预填到记账页。
- * 全部依赖 Android 系统自带的语音识别（多数手机支持中文），
- * 无需任何服务器或第三方服务。
+ *
+ * 6.3 重大修复：弃用 SpeechRecognizer API（国产手机频繁 ERROR_CLIENT），
+ * 改用 Intent.ACTION_RECOGNIZE_SPEECH + startActivityForResult 方式。
+ * 由系统选择可用的语音识别应用处理（手机自带输入法、讯飞、搜狗等），
+ * 兼容性更好且有图形化识别界面。
  *
  * 支持的语音示例：
  *  - "花了 25 元吃午餐"
@@ -44,7 +45,6 @@ public class VoiceRecordActivity extends AppCompatActivity {
     private LinearLayout topNav;
     private Button btnSpeak, btnUse, btnExpense, btnIncome;
     private TextView tvResult, tvParsedAmount, tvParsedRemark, tvHint;
-    private SpeechRecognizer speechRecognizer;
     private double parsedAmount = 0;
     private String parsedRemark = "";
     private int selectedType = Record.TYPE_EXPENSE;
@@ -58,6 +58,29 @@ public class VoiceRecordActivity extends AppCompatActivity {
                     Toast.makeText(this, "需要麦克风权限才能进行语音识别", Toast.LENGTH_LONG).show();
                 }
             });
+
+    // 6.3 启动系统语音识别 Activity 的 launcher
+    private final ActivityResultLauncher<Intent> speechLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                    (ActivityResult result) -> {
+                        btnSpeak.setEnabled(true);
+                        btnSpeak.setText("🎤 点击说话");
+                        if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                            ArrayList<String> matches = result.getData()
+                                    .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                            if (matches != null && !matches.isEmpty()) {
+                                String text = matches.get(0);
+                                tvResult.setText(text);
+                                parseText(text);
+                                return;
+                            }
+                        }
+                        if (result.getResultCode() == Activity.RESULT_CANCELED) {
+                            tvHint.setText("已取消语音识别");
+                        } else {
+                            tvHint.setText("未识别到内容，请重试");
+                        }
+                    });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,81 +110,8 @@ public class VoiceRecordActivity extends AppCompatActivity {
         tvParsedRemark = findViewById(R.id.tvParsedRemark);
         tvHint = findViewById(R.id.tvHint);
 
-        // 6.2 修复：不再使用 isRecognitionAvailable 判断（国产手机无 Google 服务会误报不支持）
-        // 直接创建 SpeechRecognizer，由 onError 回调处理实际错误
-        try {
-            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
-            speechRecognizer.setRecognitionListener(new RecognitionListener() {
-                @Override
-                public void onReadyForSpeech(Bundle params) {
-                    tvHint.setText("请说话...");
-                }
-                @Override
-                public void onBeginningOfSpeech() {
-                    tvHint.setText("正在听...");
-                }
-                @Override
-                public void onRmsChanged(float rmsdB) {}
-                @Override
-                public void onBufferReceived(byte[] buffer) {}
-                @Override
-                public void onEndOfSpeech() {
-                    tvHint.setText("识别中...");
-                }
-                @Override
-                public void onError(int error) {
-                    String msg;
-                    switch (error) {
-                        case SpeechRecognizer.ERROR_NO_MATCH: msg = "未识别到内容，请重试"; break;
-                        case SpeechRecognizer.ERROR_SPEECH_TIMEOUT: msg = "超时未说话，请重试"; break;
-                        case SpeechRecognizer.ERROR_AUDIO: msg = "音频错误"; break;
-                        case SpeechRecognizer.ERROR_RECOGNIZER_BUSY: msg = "识别器忙，请稍后"; break;
-                        case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS: msg = "需要麦克风权限"; break;
-                        case SpeechRecognizer.ERROR_NETWORK: msg = "网络错误，语音识别需要联网"; break;
-                        case SpeechRecognizer.ERROR_NETWORK_TIMEOUT: msg = "网络超时，请重试"; break;
-                        case SpeechRecognizer.ERROR_SERVER: msg = "服务器错误，请稍后重试"; break;
-                        case SpeechRecognizer.ERROR_CLIENT: msg = "客户端错误，请重试"; break;
-                        case SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED: msg = "语言不支持"; break;
-                        default: msg = "识别错误（" + error + "），请重试"; break;
-                    }
-                    tvHint.setText(msg);
-                    btnSpeak.setEnabled(true);
-                    btnSpeak.setText("🎤 点击说话");
-                }
-                @Override
-                public void onResults(Bundle results) {
-                    ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                    if (matches != null && !matches.isEmpty()) {
-                        String text = matches.get(0);
-                        tvResult.setText(text);
-                        parseText(text);
-                    } else {
-                        tvHint.setText("未识别到内容");
-                    }
-                    btnSpeak.setEnabled(true);
-                    btnSpeak.setText("🎤 点击说话");
-                }
-                @Override
-                public void onPartialResults(Bundle partialResults) {}
-                @Override
-                public void onEvent(int eventType, Bundle params) {}
-            });
-        } catch (Exception e) {
-            tvHint.setText("无法初始化语音识别：" + e.getMessage());
-            btnSpeak.setEnabled(false);
-        }
-
         btnSpeak.setOnClickListener(v -> {
             HapticHelper.medium(this);
-            if (speechRecognizer == null) {
-                // 6.2 兜底：尝试重新创建
-                try {
-                    speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
-                } catch (Exception e) {
-                    Toast.makeText(this, "无法启动语音识别", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-            }
             // 6.1 先检查 RECORD_AUDIO 权限，未授权则请求
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                     == PackageManager.PERMISSION_GRANTED) {
@@ -208,20 +158,24 @@ public class VoiceRecordActivity extends AppCompatActivity {
         });
     }
 
-    /** 6.1 启动语音识别（已取得 RECORD_AUDIO 权限后调用） */
+    /** 6.3 启动系统语音识别 Activity（已取得 RECORD_AUDIO 权限后调用） */
     private void startListening() {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN");
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "请说出金额和用途，如：花了25元吃午餐");
         try {
             btnSpeak.setEnabled(false);
             btnSpeak.setText("🎤 正在录音...");
-            speechRecognizer.startListening(intent);
+            tvHint.setText("正在启动语音识别...");
+            speechLauncher.launch(intent);
         } catch (Exception e) {
-            Toast.makeText(this, "无法启动语音识别：" + e.getMessage(), Toast.LENGTH_SHORT).show();
             btnSpeak.setEnabled(true);
             btnSpeak.setText("🎤 点击说话");
+            tvHint.setText("无法启动语音识别：" + e.getMessage());
+            Toast.makeText(this, "设备未安装语音识别应用，可尝试安装讯飞输入法或搜狗输入法",
+                    Toast.LENGTH_LONG).show();
         }
     }
 
@@ -300,14 +254,5 @@ public class VoiceRecordActivity extends AppCompatActivity {
         }
         result += temp;
         return result > 0 ? result : 0;
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (speechRecognizer != null) {
-            speechRecognizer.destroy();
-            speechRecognizer = null;
-        }
     }
 }

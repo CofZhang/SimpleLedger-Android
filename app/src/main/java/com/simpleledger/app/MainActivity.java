@@ -56,6 +56,14 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ignored) {
         }
 
+        // 6.3 启动时确保提醒闹钟被注册（防止应用更新/系统清理后闹钟丢失）
+        try {
+            if (ReminderReceiver.isEnabled(this)) {
+                ReminderReceiver.scheduleNextDay(this);
+            }
+        } catch (Exception ignored) {
+        }
+
         recordsFragment = new RecordsFragment();
         addRecordFragment = new AddRecordFragment();
         statsFragment = new StatsFragment();
