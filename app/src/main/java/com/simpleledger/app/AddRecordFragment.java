@@ -365,6 +365,11 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
         selectedProjectName = null;
         tvProject.setText(R.string.no_project);
         loadCategories();
+
+        // 5.7 保存成功后自动跳转到明细界面
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).switchToRecordsAfterSave();
+        }
     }
 
     @Override

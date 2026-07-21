@@ -159,6 +159,11 @@ public class MainActivity extends AppCompatActivity {
         bottomNav.setSelectedItemId(R.id.nav_stats);
     }
 
+    /** 5.7 记账成功后自动跳转到明细界面 */
+    public void switchToRecordsAfterSave() {
+        bottomNav.setSelectedItemId(R.id.nav_records);
+    }
+
     /**
      * 返回逻辑：非明细页先返回到明细页，再点返回才退出 APP
      */

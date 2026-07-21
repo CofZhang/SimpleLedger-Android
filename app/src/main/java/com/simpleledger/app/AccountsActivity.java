@@ -1,5 +1,6 @@
 package com.simpleledger.app;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -151,6 +152,15 @@ public class AccountsActivity extends AppCompatActivity {
             holder.itemView.setOnLongClickListener(v -> {
                 confirmDeleteAccount(account);
                 return true;
+            });
+
+            // 5.7 点击账户跳转到账户详情页，查看明细和总收支
+            holder.itemView.setOnClickListener(v -> {
+                HapticHelper.light(AccountsActivity.this);
+                Intent intent = new Intent(AccountsActivity.this, AccountDetailActivity.class);
+                intent.putExtra("account_id", account.getId());
+                intent.putExtra("account_name", account.getName());
+                startActivity(intent);
             });
         }
 

@@ -873,6 +873,80 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     /**
+     * 5.7 新增：按账户 + 可选日期范围 + 可选项目 + 可选标签 组合查询账单明细
+     * 任意条件传 null/0/空字符串表示不限制
+     */
+    public List<Record> getRecordsByFilter(Long accountId, String startDate, String endDate,
+                                           Long projectId, String tag) {
+        StringBuilder query = new StringBuilder();
+        query.append("SELECT r.*, c.").append(KEY_CAT_NAME).append(", c.").append(KEY_CAT_ICON).append(", c.").append(KEY_CAT_COLOR)
+                .append(", p.").append(KEY_PROJ_NAME)
+                .append(", a.").append(KEY_ACC_NAME).append(", a.").append(KEY_ACC_ICON)
+                .append(" FROM ").append(TABLE_RECORDS).append(" r")
+                .append(" LEFT JOIN ").append(TABLE_CATEGORIES).append(" c ON r.").append(KEY_CATEGORY_ID).append(" = c.").append(KEY_ID)
+                .append(" LEFT JOIN ").append(TABLE_PROJECTS).append(" p ON r.").append(KEY_PROJECT_ID).append(" = p.").append(KEY_ID)
+                .append(" LEFT JOIN ").append(TABLE_ACCOUNTS).append(" a ON r.").append(KEY_ACCOUNT_ID).append(" = a.").append(KEY_ID)
+                .append(" WHERE 1=1");
+
+        List<String> args = new ArrayList<>();
+        if (accountId != null && accountId > 0) {
+            query.append(" AND r.").append(KEY_ACCOUNT_ID).append(" = ?");
+            args.add(String.valueOf(accountId));
+        }
+        if (startDate != null && !startDate.isEmpty() && endDate != null && !endDate.isEmpty()) {
+            query.append(" AND r.").append(KEY_DATE).append(" >= ? AND r.").append(KEY_DATE).append(" <= ?");
+            args.add(startDate);
+            args.add(endDate);
+        }
+        if (projectId != null && projectId > 0) {
+            query.append(" AND r.").append(KEY_PROJECT_ID).append(" = ?");
+            args.add(String.valueOf(projectId));
+        }
+        if (tag != null && !tag.isEmpty()) {
+            query.append(" AND r.").append(KEY_TAGS).append(" LIKE ?");
+            args.add("%" + tag + "%");
+        }
+        query.append(" ORDER BY r.").append(KEY_TIMESTAMP).append(" DESC");
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(query.toString(), args.toArray(new String[0]));
+        List<Record> records = new ArrayList<>();
+        if (cursor.moveToFirst()) {
+            do {
+                Record record = cursorToRecord(cursor);
+                fillJoinFields(record, cursor);
+                records.add(record);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return records;
+    }
+
+    /** 5.7 新增：获取所有使用过的标签（去重，按字母序） */
+    public List<String> getAllTags() {
+        List<String> tags = new ArrayList<>();
+        String query = "SELECT DISTINCT " + KEY_TAGS + " FROM " + TABLE_RECORDS
+                + " WHERE " + KEY_TAGS + " IS NOT NULL AND " + KEY_TAGS + " != ''";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(query, null);
+        java.util.Set<String> set = new java.util.LinkedHashSet<>();
+        if (cursor.moveToFirst()) {
+            do {
+                String tagsStr = cursor.getString(0);
+                if (tagsStr == null || tagsStr.isEmpty()) continue;
+                String[] arr = tagsStr.trim().split("\\s+");
+                for (String t : arr) {
+                    if (!t.isEmpty()) set.add(t);
+                }
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        tags.addAll(set);
+        java.util.Collections.sort(tags);
+        return tags;
+    }
+
+    /**
      * 5.6 新增：按日期范围 + 项目查询账单明细
      */
     public List<Record> getRecordsByDateRangeAndProject(String startDate, String endDate, long projectId) {

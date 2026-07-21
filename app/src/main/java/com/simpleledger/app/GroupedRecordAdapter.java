@@ -145,19 +145,28 @@ public class GroupedRecordAdapter extends RecyclerView.Adapter<RecyclerView.View
             vh.tvCategory.setText(record.getCategoryName());
             vh.tvImportant.setVisibility(record.isImportant() ? View.VISIBLE : View.GONE);
 
+            // 5.7 合并显示备注 + 项目 + 标签为一行浅灰色小字，用分号分隔
+            StringBuilder descSb = new StringBuilder();
             if (record.getRemark() != null && !record.getRemark().isEmpty()) {
-                vh.tvRemark.setText(record.getRemark());
+                descSb.append(record.getRemark());
+            }
+            if (record.getProjectName() != null && !record.getProjectName().isEmpty()) {
+                if (descSb.length() > 0) descSb.append("；");
+                descSb.append("项目: ").append(record.getProjectName());
+            }
+            if (record.getTags() != null && !record.getTags().isEmpty()) {
+                if (descSb.length() > 0) descSb.append("；");
+                descSb.append("标签: ").append(record.getTags());
+            }
+            if (descSb.length() > 0) {
+                vh.tvRemark.setText(descSb.toString());
                 vh.tvRemark.setVisibility(View.VISIBLE);
             } else {
                 vh.tvRemark.setVisibility(View.GONE);
             }
 
-            if (record.getProjectName() != null && !record.getProjectName().isEmpty()) {
-                vh.tvProjectTag.setText(record.getProjectName());
-                vh.tvProjectTag.setVisibility(View.VISIBLE);
-            } else {
-                vh.tvProjectTag.setVisibility(View.GONE);
-            }
+            // 5.7 项目已合并到备注行，单独的项目 tag 隐藏
+            vh.tvProjectTag.setVisibility(View.GONE);
 
             // 5.4 分组模式下隐藏日期（日期已在分组标题中显示）
             vh.tvDate.setVisibility(View.GONE);
