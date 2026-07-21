@@ -11,6 +11,11 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- 6.0 新增：WebDAV 云备份 / OCR / 语音记账 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:allowBackup="true"
@@ -40,6 +45,24 @@
         <activity android:name=".PivotActivity" />
         <activity android:name=".SettingsActivity" />
         <activity android:name=".DateRangeActivity" />
+        <!-- 6.0 新增 Activity -->
+        <activity android:name=".RecurringActivity" />
+        <activity android:name=".AnalysisActivity" />
+        <activity android:name=".ShareActivity" />
+        <activity android:name=".WebDavBackupActivity" />
+        <activity android:name=".OcrActivity" />
+        <activity android:name=".VoiceRecordActivity" />
+
+        <!-- 6.0 FileProvider 用于账单图片分享 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <receiver
             android:name=".ReminderReceiver"

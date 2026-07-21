@@ -6,19 +6,24 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "simple_ledger.db";
-    private static final int DATABASE_VERSION = 5;
+    private static final int DATABASE_VERSION = 7;
 
     private static final String TABLE_RECORDS = "records";
     private static final String TABLE_CATEGORIES = "categories";
     private static final String TABLE_PROJECTS = "projects";
     private static final String TABLE_BUDGETS = "budgets";
     private static final String TABLE_ACCOUNTS = "accounts";
+    // 6.0 新增表
+    private static final String TABLE_CATEGORY_BUDGETS = "category_budgets";
+    private static final String TABLE_RECURRING = "recurring_bills";
 
     private static final String KEY_ID = "id";
     private static final String KEY_TYPE = "type";
@@ -51,6 +56,24 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String KEY_BUDGET_MONTH = "year_month";
     private static final String KEY_BUDGET_AMOUNT = "amount";
+
+    // 6.0 分类预算表字段
+    private static final String KEY_CB_CATEGORY_ID = "category_id";
+    private static final String KEY_CB_AMOUNT = "amount";
+    private static final String KEY_CB_YEAR_MONTH = "year_month";
+
+    // 6.0 周期账单表字段
+    private static final String KEY_REC_TITLE = "title";
+    private static final String KEY_REC_TYPE = "type";
+    private static final String KEY_REC_AMOUNT = "amount";
+    private static final String KEY_REC_CATEGORY_ID = "category_id";
+    private static final String KEY_REC_ACCOUNT_ID = "account_id";
+    private static final String KEY_REC_PROJECT_ID = "project_id";
+    private static final String KEY_REC_PERIOD = "period"; // 1=每日 2=每周 3=每月 4=每年
+    private static final String KEY_REC_DAY_OF_PERIOD = "day_of_period"; // 每月几号/每年几月几日等
+    private static final String KEY_REC_NEXT_DATE = "next_date"; // yyyy-MM-dd
+    private static final String KEY_REC_REMARK = "remark";
+    private static final String KEY_REC_ENABLED = "enabled";
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -103,6 +126,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + KEY_ACC_BALANCE + " REAL NOT NULL DEFAULT 0, "
                 + KEY_ACC_REMARK + " TEXT)";
         db.execSQL(createAccountsTable);
+
+        // 6.0 分类预算表：按分类 + 月份设置预算
+        String createCategoryBudgetsTable = "CREATE TABLE " + TABLE_CATEGORY_BUDGETS + " ("
+                + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + KEY_CB_CATEGORY_ID + " INTEGER NOT NULL, "
+                + KEY_CB_YEAR_MONTH + " TEXT NOT NULL, "
+                + KEY_CB_AMOUNT + " REAL NOT NULL, "
+                + "UNIQUE(" + KEY_CB_CATEGORY_ID + ", " + KEY_CB_YEAR_MONTH + "))";
+        db.execSQL(createCategoryBudgetsTable);
+
+        // 6.0 周期账单表：自动生成房租/订阅/工资等
+        String createRecurringTable = "CREATE TABLE " + TABLE_RECURRING + " ("
+                + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + KEY_REC_TITLE + " TEXT NOT NULL, "
+                + KEY_REC_TYPE + " INTEGER NOT NULL, "
+                + KEY_REC_AMOUNT + " REAL NOT NULL, "
+                + KEY_REC_CATEGORY_ID + " INTEGER NOT NULL, "
+                + KEY_REC_ACCOUNT_ID + " INTEGER DEFAULT 1, "
+                + KEY_REC_PROJECT_ID + " INTEGER DEFAULT 0, "
+                + KEY_REC_PERIOD + " INTEGER NOT NULL, "
+                + KEY_REC_DAY_OF_PERIOD + " INTEGER DEFAULT 1, "
+                + KEY_REC_NEXT_DATE + " TEXT NOT NULL, "
+                + KEY_REC_REMARK + " TEXT, "
+                + KEY_REC_ENABLED + " INTEGER DEFAULT 1)";
+        db.execSQL(createRecurringTable);
 
         initDefaultCategories(db);
         initDefaultAccounts(db);
@@ -1168,6 +1216,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL("ALTER TABLE " + TABLE_CATEGORIES + " ADD COLUMN " + KEY_CAT_PARENT_ID + " INTEGER DEFAULT 0");
             db.execSQL("ALTER TABLE " + TABLE_RECORDS + " ADD COLUMN " + KEY_IS_IMPORTANT + " INTEGER DEFAULT 0");
         }
+        if (oldVersion < 6) {
+            // 6.0 分类预算表
+            db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_CATEGORY_BUDGETS + " ("
+                    + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    + KEY_CB_CATEGORY_ID + " INTEGER NOT NULL, "
+                    + KEY_CB_YEAR_MONTH + " TEXT NOT NULL, "
+                    + KEY_CB_AMOUNT + " REAL NOT NULL, "
+                    + "UNIQUE(" + KEY_CB_CATEGORY_ID + ", " + KEY_CB_YEAR_MONTH + "))");
+        }
+        if (oldVersion < 7) {
+            // 6.0 周期账单表
+            db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_RECURRING + " ("
+                    + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    + KEY_REC_TITLE + " TEXT NOT NULL, "
+                    + KEY_REC_TYPE + " INTEGER NOT NULL, "
+                    + KEY_REC_AMOUNT + " REAL NOT NULL, "
+                    + KEY_REC_CATEGORY_ID + " INTEGER NOT NULL, "
+                    + KEY_REC_ACCOUNT_ID + " INTEGER DEFAULT 1, "
+                    + KEY_REC_PROJECT_ID + " INTEGER DEFAULT 0, "
+                    + KEY_REC_PERIOD + " INTEGER NOT NULL, "
+                    + KEY_REC_DAY_OF_PERIOD + " INTEGER DEFAULT 1, "
+                    + KEY_REC_NEXT_DATE + " TEXT NOT NULL, "
+                    + KEY_REC_REMARK + " TEXT, "
+                    + KEY_REC_ENABLED + " INTEGER DEFAULT 1)");
+        }
     }
 
     private void refreshDefaultCategoryColors(SQLiteDatabase db) {
@@ -1231,5 +1304,250 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         public int year;
         public double expense;
         public double income;
+    }
+
+    // ==================== 6.0 分类预算 ====================
+
+    public void setCategoryBudget(long categoryId, String yearMonth, double amount) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_CB_CATEGORY_ID, categoryId);
+        values.put(KEY_CB_YEAR_MONTH, yearMonth);
+        values.put(KEY_CB_AMOUNT, amount);
+        db.insertWithOnConflict(TABLE_CATEGORY_BUDGETS, null, values,
+                SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    public double getCategoryBudget(long categoryId, String yearMonth) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_CATEGORY_BUDGETS, new String[]{KEY_CB_AMOUNT},
+                KEY_CB_CATEGORY_ID + "=? AND " + KEY_CB_YEAR_MONTH + "=?",
+                new String[]{String.valueOf(categoryId), yearMonth},
+                null, null, null);
+        double amount = 0;
+        if (cursor.moveToFirst()) amount = cursor.getDouble(0);
+        cursor.close();
+        return amount;
+    }
+
+    public List<long[]> getAllCategoryBudgets(String yearMonth) {
+        List<long[]> result = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_CATEGORY_BUDGETS,
+                new String[]{KEY_CB_CATEGORY_ID, KEY_CB_AMOUNT},
+                KEY_CB_YEAR_MONTH + "=?", new String[]{yearMonth},
+                null, null, null);
+        if (cursor.moveToFirst()) {
+            do {
+                result.add(new long[]{cursor.getLong(0), (long) cursor.getDouble(1)});
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return result;
+    }
+
+    public List<double[]> getCategoryBudgetsWithExpense(String yearMonth) {
+        List<double[]> result = new ArrayList<>(); // [categoryId, budget, expense]
+        SQLiteDatabase db = this.getReadableDatabase();
+        String sql = "SELECT cb." + KEY_CB_CATEGORY_ID + ", cb." + KEY_CB_AMOUNT
+                + ", COALESCE(SUM(CASE WHEN r." + KEY_TYPE + "=" + Record.TYPE_EXPENSE
+                + " THEN r." + KEY_AMOUNT + " ELSE 0 END), 0) as expense"
+                + " FROM " + TABLE_CATEGORY_BUDGETS + " cb"
+                + " LEFT JOIN " + TABLE_RECORDS + " r ON r." + KEY_CATEGORY_ID + "=cb." + KEY_CB_CATEGORY_ID
+                + " AND r." + KEY_DATE + " LIKE ? || '%'"
+                + " WHERE cb." + KEY_CB_YEAR_MONTH + "=?"
+                + " GROUP BY cb." + KEY_CB_CATEGORY_ID + ", cb." + KEY_CB_AMOUNT;
+        Cursor cursor = db.rawQuery(sql, new String[]{yearMonth, yearMonth});
+        if (cursor.moveToFirst()) {
+            do {
+                result.add(new double[]{cursor.getLong(0), cursor.getDouble(1), cursor.getDouble(2)});
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return result;
+    }
+
+    // ==================== 6.0 周期账单 ====================
+
+    public long addRecurringBill(RecurringBill bill) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_REC_TITLE, bill.getTitle());
+        values.put(KEY_REC_TYPE, bill.getType());
+        values.put(KEY_REC_AMOUNT, bill.getAmount());
+        values.put(KEY_REC_CATEGORY_ID, bill.getCategoryId());
+        values.put(KEY_REC_ACCOUNT_ID, bill.getAccountId());
+        values.put(KEY_REC_PROJECT_ID, bill.getProjectId());
+        values.put(KEY_REC_PERIOD, bill.getPeriod());
+        values.put(KEY_REC_DAY_OF_PERIOD, bill.getDayOfPeriod());
+        values.put(KEY_REC_NEXT_DATE, bill.getNextDate());
+        values.put(KEY_REC_REMARK, bill.getRemark());
+        values.put(KEY_REC_ENABLED, bill.isEnabled() ? 1 : 0);
+        return db.insert(TABLE_RECURRING, null, values);
+    }
+
+    public int updateRecurringBill(RecurringBill bill) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_REC_TITLE, bill.getTitle());
+        values.put(KEY_REC_TYPE, bill.getType());
+        values.put(KEY_REC_AMOUNT, bill.getAmount());
+        values.put(KEY_REC_CATEGORY_ID, bill.getCategoryId());
+        values.put(KEY_REC_ACCOUNT_ID, bill.getAccountId());
+        values.put(KEY_REC_PROJECT_ID, bill.getProjectId());
+        values.put(KEY_REC_PERIOD, bill.getPeriod());
+        values.put(KEY_REC_DAY_OF_PERIOD, bill.getDayOfPeriod());
+        values.put(KEY_REC_NEXT_DATE, bill.getNextDate());
+        values.put(KEY_REC_REMARK, bill.getRemark());
+        values.put(KEY_REC_ENABLED, bill.isEnabled() ? 1 : 0);
+        return db.update(TABLE_RECURRING, values, KEY_ID + "=?",
+                new String[]{String.valueOf(bill.getId())});
+    }
+
+    public int deleteRecurringBill(long id) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        return db.delete(TABLE_RECURRING, KEY_ID + "=?",
+                new String[]{String.valueOf(id)});
+    }
+
+    public List<RecurringBill> getAllRecurringBills() {
+        List<RecurringBill> list = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_RECURRING, null, null, null,
+                null, null, KEY_REC_ENABLED + " DESC, " + KEY_ID + " ASC");
+        if (cursor.moveToFirst()) {
+            do {
+                RecurringBill bill = new RecurringBill();
+                bill.setId(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_ID)));
+                bill.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(KEY_REC_TITLE)));
+                bill.setType(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_REC_TYPE)));
+                bill.setAmount(cursor.getDouble(cursor.getColumnIndexOrThrow(KEY_REC_AMOUNT)));
+                bill.setCategoryId(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_REC_CATEGORY_ID)));
+                bill.setAccountId(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_REC_ACCOUNT_ID)));
+                bill.setProjectId(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_REC_PROJECT_ID)));
+                bill.setPeriod(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_REC_PERIOD)));
+                bill.setDayOfPeriod(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_REC_DAY_OF_PERIOD)));
+                bill.setNextDate(cursor.getString(cursor.getColumnIndexOrThrow(KEY_REC_NEXT_DATE)));
+                bill.setRemark(cursor.getString(cursor.getColumnIndexOrThrow(KEY_REC_REMARK)));
+                bill.setEnabled(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_REC_ENABLED)) == 1);
+                list.add(bill);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return list;
+    }
+
+    /**
+     * 6.0 检查并生成到期的周期账单
+     * @return 生成的记录数
+     */
+    public int generateDueRecurringBills() {
+        List<RecurringBill> bills = getAllRecurringBills();
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                .format(new java.util.Date());
+        int generated = 0;
+
+        for (RecurringBill bill : bills) {
+            if (!bill.isEnabled()) continue;
+            // 比较 nextDate <= today
+            while (bill.getNextDate().compareTo(today) <= 0) {
+                // 生成记录
+                Record r = new Record();
+                r.setType(bill.getType());
+                r.setAmount(bill.getAmount());
+                r.setCategoryId(bill.getCategoryId());
+                Category cat = getCategoryById(bill.getCategoryId());
+                if (cat != null) {
+                    r.setCategoryName(cat.getName());
+                }
+                r.setAccountId(bill.getAccountId());
+                r.setProjectId(bill.getProjectId());
+                r.setDate(bill.getNextDate());
+                r.setTimestamp(System.currentTimeMillis());
+                r.setRemark(bill.getTitle() + (bill.getRemark() != null ? " " + bill.getRemark() : ""));
+                addRecord(r);
+                generated++;
+
+                // 计算下一次日期
+                bill.setNextDate(calculateNextDate(bill));
+                updateRecurringBill(bill);
+            }
+        }
+        return generated;
+    }
+
+    /** 根据周期计算下一次日期 */
+    private String calculateNextDate(RecurringBill bill) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.setTime(sdf.parse(bill.getNextDate()));
+            switch (bill.getPeriod()) {
+                case 1: // 每日
+                    cal.add(java.util.Calendar.DAY_OF_MONTH, 1);
+                    break;
+                case 2: // 每周
+                    cal.add(java.util.Calendar.DAY_OF_MONTH, 7);
+                    break;
+                case 3: // 每月
+                    cal.add(java.util.Calendar.MONTH, 1);
+                    break;
+                case 4: // 每年
+                    cal.add(java.util.Calendar.YEAR, 1);
+                    break;
+            }
+            return sdf.format(cal.getTime());
+        } catch (Exception e) {
+            return bill.getNextDate();
+        }
+    }
+
+    public Category getCategoryById(long id) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_CATEGORIES, null, KEY_ID + "=?",
+                new String[]{String.valueOf(id)}, null, null, null);
+        Category cat = null;
+        if (cursor.moveToFirst()) {
+            cat = new Category();
+            cat.setId(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_ID)));
+            cat.setName(cursor.getString(cursor.getColumnIndexOrThrow(KEY_CAT_NAME)));
+            cat.setIcon(cursor.getString(cursor.getColumnIndexOrThrow(KEY_CAT_ICON)));
+            cat.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_CAT_COLOR)));
+            cat.setType(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_CAT_TYPE)));
+        }
+        cursor.close();
+        return cat;
+    }
+
+    /** 6.0 获取某分类在某月的支出 */
+    public double getCategoryExpenseByMonth(long categoryId, String yearMonth) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String sql = "SELECT SUM(" + KEY_AMOUNT + ") FROM " + TABLE_RECORDS
+                + " WHERE " + KEY_TYPE + "=" + Record.TYPE_EXPENSE
+                + " AND " + KEY_CATEGORY_ID + "=?"
+                + " AND " + KEY_DATE + " LIKE ?";
+        Cursor cursor = db.rawQuery(sql, new String[]{String.valueOf(categoryId), yearMonth + "%"});
+        double sum = 0;
+        if (cursor.moveToFirst()) sum = cursor.getDouble(0);
+        cursor.close();
+        return sum;
+    }
+
+    /** 6.0 智能分析：获取最近 N 个月的月度支出 */
+    public List<MonthlySum> getRecentMonthlyExpenses(int months) {
+        List<MonthlySum> list = new ArrayList<>();
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        for (int i = months - 1; i >= 0; i--) {
+            java.util.Calendar c = (java.util.Calendar) cal.clone();
+            c.add(java.util.Calendar.MONTH, -i);
+            String ym = new SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(c.getTime());
+            MonthlySum ms = new MonthlySum();
+            ms.yearMonth = ym;
+            ms.month = c.get(java.util.Calendar.MONTH) + 1;
+            ms.expense = getMonthlyExpense(ym);
+            ms.income = getMonthlyIncome(ym);
+            list.add(ms);
+        }
+        return list;
     }
 }

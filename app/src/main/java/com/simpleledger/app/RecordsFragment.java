@@ -210,6 +210,48 @@ public class RecordsFragment extends Fragment {
             dialog.dismiss();
             startActivity(new Intent(getActivity(), DateRangeActivity.class));
         });
+        // 6.0 预算管理入口
+        dialogView.findViewById(R.id.itemBudget).setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            dialog.dismiss();
+            startActivity(new Intent(getActivity(), BudgetActivity.class));
+        });
+        // 6.0 周期账单入口
+        dialogView.findViewById(R.id.itemRecurring).setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            dialog.dismiss();
+            startActivity(new Intent(getActivity(), RecurringActivity.class));
+        });
+        // 6.0 智能分析入口
+        dialogView.findViewById(R.id.itemAnalysis).setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            dialog.dismiss();
+            startActivity(new Intent(getActivity(), AnalysisActivity.class));
+        });
+        // 6.0 账单分享入口
+        dialogView.findViewById(R.id.itemShare).setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            dialog.dismiss();
+            startActivity(new Intent(getActivity(), ShareActivity.class));
+        });
+        // 6.0 WebDAV 云备份入口
+        dialogView.findViewById(R.id.itemWebDav).setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            dialog.dismiss();
+            startActivity(new Intent(getActivity(), WebDavBackupActivity.class));
+        });
+        // 6.0 OCR 记账入口
+        dialogView.findViewById(R.id.itemOcr).setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            dialog.dismiss();
+            startActivity(new Intent(getActivity(), OcrActivity.class));
+        });
+        // 6.0 语音记账入口
+        dialogView.findViewById(R.id.itemVoice).setOnClickListener(v -> {
+            HapticHelper.light(getContext());
+            dialog.dismiss();
+            startActivity(new Intent(getActivity(), VoiceRecordActivity.class));
+        });
         // 4.5 设置入口
         dialogView.findViewById(R.id.itemSettings).setOnClickListener(v -> {
             HapticHelper.light(getContext());

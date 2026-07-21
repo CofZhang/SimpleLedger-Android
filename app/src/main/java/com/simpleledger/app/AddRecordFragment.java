@@ -190,6 +190,24 @@ public class AddRecordFragment extends Fragment implements CategoryAdapter.OnCat
         }
     }
 
+    /** 6.0 OCR/语音记账：外部调用预填金额 */
+    public void setAmount(double amount) {
+        if (etAmount == null) return;
+        if (amount > 0) {
+            etAmount.setText(String.format(Locale.getDefault(), "%.2f", amount));
+            etAmount.setSelection(etAmount.getText().length());
+        }
+    }
+
+    /** 6.0 OCR/语音记账：外部调用预填备注 */
+    public void setPrefillRemark(String remark) {
+        if (etRemark != null && remark != null && !remark.isEmpty()) {
+            etRemark.setText(remark);
+            etRemark.setSelection(etRemark.getText().length());
+            suggestCategory(remark);
+        }
+    }
+
     /** 4.5 双击分类选择框：快速打开最近使用分类 */
     private void showRecentCategoriesDialog() {
         List<Category> recent = dbHelper.getRecentCategories(currentType, 12);

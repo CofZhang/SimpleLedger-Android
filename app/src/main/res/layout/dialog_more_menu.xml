@@ -206,7 +206,7 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- 4.5 第三行：日期范围 + 设置 -->
+    <!-- 4.5 第三行：日期范围 + 预算 + 周期账单 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -244,6 +244,133 @@
                 android:textSize="13sp" />
         </LinearLayout>
 
+        <!-- 6.0 预算管理入口 -->
+        <LinearLayout
+            android:id="@+id/itemBudget"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_category_normal"
+                android:gravity="center"
+                android:text="💰"
+                android:textSize="24sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="预算"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- 6.0 周期账单入口 -->
+        <LinearLayout
+            android:id="@+id/itemRecurring"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_category_normal"
+                android:gravity="center"
+                android:text="🔁"
+                android:textSize="24sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="周期账单"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 6.0 第四行：智能分析 + 账单分享 + 设置 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:weightSum="3">
+
+        <LinearLayout
+            android:id="@+id/itemAnalysis"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_category_normal"
+                android:gravity="center"
+                android:text="📈"
+                android:textSize="24sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="智能分析"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/itemShare"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_category_normal"
+                android:gravity="center"
+                android:text="📤"
+                android:textSize="24sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="账单分享"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
         <LinearLayout
             android:id="@+id/itemSettings"
             android:layout_width="0dp"
@@ -272,11 +399,102 @@
                 android:textColor="@color/text_primary"
                 android:textSize="13sp" />
         </LinearLayout>
+    </LinearLayout>
 
-        <View
+    <!-- 6.0 第五行：WebDAV云备份 + OCR记账 + 语音记账 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:weightSum="3">
+
+        <LinearLayout
+            android:id="@+id/itemWebDav"
             android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_category_normal"
+                android:gravity="center"
+                android:text="☁️"
+                android:textSize="24sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="云备份"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/itemOcr"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_category_normal"
+                android:gravity="center"
+                android:text="📷"
+                android:textSize="24sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="OCR记账"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/itemVoice"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_category_normal"
+                android:gravity="center"
+                android:text="🎤"
+                android:textSize="24sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="语音记账"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
+        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout>

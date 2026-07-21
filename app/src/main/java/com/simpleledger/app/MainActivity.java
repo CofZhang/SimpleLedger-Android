@@ -33,12 +33,28 @@ public class MainActivity extends AppCompatActivity {
     public static final String TARGET_ADD_INCOME = "add_income";
     public static final String TARGET_STATS = "stats";
 
+    // 6.0 OCR/语音记账：通过 Intent extra 预填金额和备注
+    public static final String EXTRA_AMOUNT = "extra_amount";
+    public static final String EXTRA_REMARK = "extra_remark";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // 沉浸式全屏：内容延伸到状态栏，由 insets 处理安全区域
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
+
+        // 6.0 启动时检查并生成到期的周期账单
+        try {
+            DatabaseHelper dbHelper = new DatabaseHelper(this);
+            int generated = dbHelper.generateDueRecurringBills();
+            if (generated > 0) {
+                android.widget.Toast.makeText(this,
+                        "已自动生成 " + generated + " 笔周期账单",
+                        android.widget.Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception ignored) {
+        }
 
         recordsFragment = new RecordsFragment();
         addRecordFragment = new AddRecordFragment();
@@ -139,8 +155,23 @@ public class MainActivity extends AppCompatActivity {
                 bottomNav.setSelectedItemId(R.id.nav_stats);
                 break;
         }
+
+        // 6.0 OCR/语音记账：预填金额和备注
+        if (addRecordFragment instanceof AddRecordFragment) {
+            if (intent.hasExtra(EXTRA_AMOUNT)) {
+                double amount = intent.getDoubleExtra(EXTRA_AMOUNT, 0);
+                ((AddRecordFragment) addRecordFragment).setAmount(amount);
+            }
+            if (intent.hasExtra(EXTRA_REMARK)) {
+                String remark = intent.getStringExtra(EXTRA_REMARK);
+                ((AddRecordFragment) addRecordFragment).setPrefillRemark(remark);
+            }
+        }
+
         // 清除 extra，避免旋转屏幕时重复触发
         intent.removeExtra(EXTRA_TARGET);
+        intent.removeExtra(EXTRA_AMOUNT);
+        intent.removeExtra(EXTRA_REMARK);
     }
 
     private void switchFragment(Fragment fragment) {

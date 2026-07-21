@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 6.0 WebDAV 云备份页 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/bg_warm_spots">
+
+    <LinearLayout
+        android:id="@+id/topNav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_gradient_header"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:minHeight="56dp">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_media_previous"
+            android:scaleType="centerInside"
+            android:tint="@color/text_primary" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="WebDAV 云备份"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="28dp"
+            android:layout_height="28dp" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_glass_card"
+                android:padding="14dp"
+                android:text="支持坚果云/NextCloud 等 WebDAV 服务。请填写你自己的 WebDAV URL、账号、密码，数据将通过 HTTPS 直接传到你的网盘，本应用不经过任何第三方服务器。"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:lineSpacingExtra="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="WebDAV URL"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/etUrl"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_glass_card"
+                android:hint="https://dav.jianguoyun.com/dav/"
+                android:inputType="textUri"
+                android:padding="12dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="账号"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/etUser"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_glass_card"
+                android:hint="user@example.com"
+                android:inputType="textEmailAddress"
+                android:padding="12dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="密码（应用密码）"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/etPwd"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_glass_card"
+                android:hint="坚果云请用应用密码"
+                android:inputType="textPassword"
+                android:padding="12dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btnSave"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_primary_button"
+                android:text="保存配置"
+                android:textColor="@android:color/white"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btnTest"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_glass_card"
+                android:text="测试连接"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"
+                android:background="@color/divider" />
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="尚未备份"
+                android:textColor="@color/text_hint"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btnBackup"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_primary_button"
+                android:text="立即备份到云端"
+                android:textColor="@android:color/white"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btnRestore"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="20dp"
+                android:background="@drawable/bg_glass_card"
+                android:text="从云端恢复"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>
