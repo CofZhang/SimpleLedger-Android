@@ -241,7 +241,20 @@ public class StatsFragment extends Fragment {
         } else if (currentChartType == 1) {
             PieChart pieChart = new PieChart(getContext());
             List<PieEntry> entries = new ArrayList<>();
-            List<DatabaseHelper.CategoryStat> stats = dbHelper.getCategoryStats(getDatePattern(), Record.TYPE_EXPENSE);
+            // 5.4 修复：周视图使用日期范围查询，而非单日 LIKE 模式
+            List<DatabaseHelper.CategoryStat> stats;
+            if (currentPeriod == 0) {
+                // 周视图：计算周一到周日的日期范围
+                Calendar start = (Calendar) currentDate.clone();
+                start.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+                Calendar end = (Calendar) start.clone();
+                end.add(Calendar.DAY_OF_MONTH, 6);
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                stats = dbHelper.getCategoryStatsForDateRange(
+                        sdf.format(start.getTime()), sdf.format(end.getTime()), Record.TYPE_EXPENSE);
+            } else {
+                stats = dbHelper.getCategoryStats(getDatePattern(), Record.TYPE_EXPENSE);
+            }
             for (DatabaseHelper.CategoryStat stat : stats) {
                 if (stat.getTotal() > 0) {
                     entries.add(new PieEntry((float) stat.getTotal(), stat.getCategoryName()));
@@ -303,7 +316,18 @@ public class StatsFragment extends Fragment {
 
     private void updateCategoryStats() {
         categoryStats.clear();
-        categoryStats.addAll(dbHelper.getCategoryStats(getDatePattern(), Record.TYPE_EXPENSE));
+        // 5.4 修复：周视图使用日期范围查询
+        if (currentPeriod == 0) {
+            Calendar start = (Calendar) currentDate.clone();
+            start.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+            Calendar end = (Calendar) start.clone();
+            end.add(Calendar.DAY_OF_MONTH, 6);
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            categoryStats.addAll(dbHelper.getCategoryStatsForDateRange(
+                    sdf.format(start.getTime()), sdf.format(end.getTime()), Record.TYPE_EXPENSE));
+        } else {
+            categoryStats.addAll(dbHelper.getCategoryStats(getDatePattern(), Record.TYPE_EXPENSE));
+        }
         categoryStatAdapter.updateData(categoryStats);
     }
 

@@ -809,6 +809,37 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return stats;
     }
 
+    /**
+     * 5.4 新增：按日期范围查询分类统计（用于周视图饼状图）
+     * 解决原 getCategoryStats 用 LIKE 'yyyy-MM-dd%' 只匹配单日的问题
+     */
+    public List<CategoryStat> getCategoryStatsForDateRange(String startDate, String endDate, int type) {
+        List<CategoryStat> stats = new ArrayList<>();
+        String query = "SELECT c." + KEY_ID + ", c." + KEY_CAT_NAME + ", c." + KEY_CAT_ICON + ", c." + KEY_CAT_COLOR
+                + ", SUM(r." + KEY_AMOUNT + ") as total"
+                + " FROM " + TABLE_RECORDS + " r"
+                + " JOIN " + TABLE_CATEGORIES + " c ON r." + KEY_CATEGORY_ID + " = c." + KEY_ID
+                + " WHERE r." + KEY_DATE + " >= ? AND r." + KEY_DATE + " <= ? AND r." + KEY_TYPE + " = ?"
+                + " GROUP BY c." + KEY_ID
+                + " ORDER BY total DESC";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(query, new String[]{startDate, endDate, String.valueOf(type)});
+
+        if (cursor.moveToFirst()) {
+            do {
+                CategoryStat stat = new CategoryStat();
+                stat.setCategoryId(cursor.getLong(0));
+                stat.setCategoryName(cursor.getString(1));
+                stat.setCategoryIcon(cursor.getString(2));
+                stat.setCategoryColor(cursor.getInt(3));
+                stat.setTotal(cursor.getDouble(4));
+                stats.add(stat);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return stats;
+    }
+
     public long addProject(Project project) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();

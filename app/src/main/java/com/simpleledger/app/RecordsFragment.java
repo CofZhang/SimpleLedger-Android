@@ -40,7 +40,7 @@ import java.util.Locale;
 
 public class RecordsFragment extends Fragment {
     private DatabaseHelper dbHelper;
-    private RecordAdapter adapter;
+    private GroupedRecordAdapter adapter;
     private List<Record> records;
     private RecyclerView rvRecords;
     private TextView tvEmpty, tvMonthExpense, tvMonthIncome, tvBalance, tvMonth, tvBudgetInfo;
@@ -83,7 +83,7 @@ public class RecordsFragment extends Fragment {
         etSearch = view.findViewById(R.id.etSearch);
 
         rvRecords.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new RecordAdapter(records);
+        adapter = new GroupedRecordAdapter();
         adapter.setOnRecordLongClickListener((record, position) -> showRecordActionMenu(record, position));
         adapter.setOnRecordClickListener((record, position) -> showRecordDetail(record));
         rvRecords.setAdapter(adapter);
@@ -179,10 +179,14 @@ public class RecordsFragment extends Fragment {
             dialog.dismiss();
             startActivity(new Intent(getActivity(), AccountsActivity.class));
         });
-        dialogView.findViewById(R.id.itemExport).setOnClickListener(v -> {
+        // 5.4 导出CSV已移至设置页，此处改为日历入口
+        dialogView.findViewById(R.id.itemCalendar).setOnClickListener(v -> {
             HapticHelper.light(getContext());
             dialog.dismiss();
-            exportCsv();
+            Intent intent = new Intent(getActivity(), CalendarActivity.class);
+            intent.putExtra("year", currentMonth.get(Calendar.YEAR));
+            intent.putExtra("month", currentMonth.get(Calendar.MONTH));
+            startActivity(intent);
         });
         dialogView.findViewById(R.id.itemSearch).setOnClickListener(v -> {
             HapticHelper.light(getContext());
@@ -404,42 +408,6 @@ public class RecordsFragment extends Fragment {
         } else {
             tvEmpty.setVisibility(View.GONE);
             rvRecords.setVisibility(View.VISIBLE);
-        }
-    }
-
-    private void exportCsv() {
-        try {
-            java.io.File dir = new java.io.File(android.os.Environment.getExternalStorageDirectory(), "CoffeeLedger");
-            if (!dir.exists()) dir.mkdirs();
-            String fileName = "记账导出_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(System.currentTimeMillis()) + ".csv";
-            java.io.File file = new java.io.File(dir, fileName);
-            java.io.FileWriter writer = new java.io.FileWriter(file);
-            writer.write("日期,类型,分类,金额,账户,项目,备注,标签\n");
-            for (Record r : dbHelper.getAllRecords()) {
-                String type = r.getType() == Record.TYPE_EXPENSE ? "支出" : "收入";
-                String line = String.format("%s,%s,%s,%.2f,%s,%s,%s,%s\n",
-                        r.getDate() != null ? r.getDate() : "",
-                        type,
-                        r.getCategoryName() != null ? r.getCategoryName() : "",
-                        r.getAmount(),
-                        r.getAccountName() != null ? r.getAccountName() : "",
-                        r.getProjectName() != null ? r.getProjectName() : "",
-                        r.getRemark() != null ? r.getRemark().replace(",", " ") : "",
-                        r.getTags() != null ? r.getTags().replace(",", " ") : "");
-                writer.write(line);
-            }
-            writer.close();
-            new AlertDialog.Builder(getContext())
-                    .setTitle("导出成功")
-                    .setMessage("文件已保存至：\n" + file.getAbsolutePath())
-                    .setPositiveButton(R.string.confirm, null)
-                    .show();
-        } catch (Exception e) {
-            new AlertDialog.Builder(getContext())
-                    .setTitle("导出失败")
-                    .setMessage(e.getMessage())
-                    .setPositiveButton(R.string.confirm, null)
-                    .show();
         }
     }
 
