@@ -1,18 +1,22 @@
 package com.simpleledger.app;
 
 import android.Manifest;
-import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Bundle;
+import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,32 +26,34 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 6.0 语音记账：使用系统语音识别 Intent 识别语音，
- * 解析"金额 + 分类关键词"，预填到记账页。
+ * 6.0 语音记账：使用 SpeechRecognizer API 直接调用手机自带麦克风识别语音。
  *
- * 6.3 重大修复：弃用 SpeechRecognizer API（国产手机频繁 ERROR_CLIENT），
- * 改用 Intent.ACTION_RECOGNIZE_SPEECH + startActivityForResult 方式。
- * 由系统选择可用的语音识别应用处理（手机自带输入法、讯飞、搜狗等），
- * 兼容性更好且有图形化识别界面。
- *
- * 支持的语音示例：
- *  - "花了 25 元吃午餐"
- *  - "午餐 25 块"
- *  - "买水果 30 元"
- *  - "工资 8000 元"（自动识别为收入，需点击"记收入"切换）
+ * 6.4 重大修复：用户反馈 vivo OriginOS 上 Intent 方式弹窗选择应用体验差，
+ * 改回 SpeechRecognizer API 直接调用（不弹窗），并：
+ *  - 显式尝试厂商自带 RecognitionService（vivo/华为/小米/OPPO/三星等）
+ *  - ERROR_CLIENT 时自动重建实例并重试一次
+ *  - APP 内显示录音状态动画（ProgressBar 旋转）
+ *  - 失败时给出清晰提示和解决建议
  */
 public class VoiceRecordActivity extends AppCompatActivity {
     private LinearLayout topNav;
     private Button btnSpeak, btnUse, btnExpense, btnIncome;
     private TextView tvResult, tvParsedAmount, tvParsedRemark, tvHint;
+    private ProgressBar progressRecord;
     private double parsedAmount = 0;
     private String parsedRemark = "";
     private int selectedType = Record.TYPE_EXPENSE;
+
+    private SpeechRecognizer speechRecognizer;
+    private boolean isListening = false;
+    private int retryCount = 0;
+    private static final int MAX_RETRY = 1;
 
     // 6.1 运行时请求 RECORD_AUDIO 权限
     private final ActivityResultLauncher<String> audioPermissionLauncher =
@@ -58,29 +64,6 @@ public class VoiceRecordActivity extends AppCompatActivity {
                     Toast.makeText(this, "需要麦克风权限才能进行语音识别", Toast.LENGTH_LONG).show();
                 }
             });
-
-    // 6.3 启动系统语音识别 Activity 的 launcher
-    private final ActivityResultLauncher<Intent> speechLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
-                    (ActivityResult result) -> {
-                        btnSpeak.setEnabled(true);
-                        btnSpeak.setText("🎤 点击说话");
-                        if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                            ArrayList<String> matches = result.getData()
-                                    .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                            if (matches != null && !matches.isEmpty()) {
-                                String text = matches.get(0);
-                                tvResult.setText(text);
-                                parseText(text);
-                                return;
-                            }
-                        }
-                        if (result.getResultCode() == Activity.RESULT_CANCELED) {
-                            tvHint.setText("已取消语音识别");
-                        } else {
-                            tvHint.setText("未识别到内容，请重试");
-                        }
-                    });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,10 +92,21 @@ public class VoiceRecordActivity extends AppCompatActivity {
         tvParsedAmount = findViewById(R.id.tvParsedAmount);
         tvParsedRemark = findViewById(R.id.tvParsedRemark);
         tvHint = findViewById(R.id.tvHint);
+        progressRecord = findViewById(R.id.progressRecord);
+        progressRecord.setVisibility(View.GONE);
+
+        initSpeechRecognizer();
 
         btnSpeak.setOnClickListener(v -> {
             HapticHelper.medium(this);
-            // 6.1 先检查 RECORD_AUDIO 权限，未授权则请求
+            if (speechRecognizer == null) {
+                initSpeechRecognizer();
+            }
+            if (speechRecognizer == null) {
+                Toast.makeText(this, "无法初始化语音识别", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            // 6.1 先检查 RECORD_AUDIO 权限
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                     == PackageManager.PERMISSION_GRANTED) {
                 startListening();
@@ -138,7 +132,6 @@ public class VoiceRecordActivity extends AppCompatActivity {
             btnExpense.setBackgroundColor(0xFFF8F3ED);
             btnExpense.setTextColor(0xFF3D352C);
         });
-        // 默认选中支出
         btnExpense.performClick();
 
         btnUse.setOnClickListener(v -> {
@@ -158,30 +151,202 @@ public class VoiceRecordActivity extends AppCompatActivity {
         });
     }
 
-    /** 6.3 启动系统语音识别 Activity（已取得 RECORD_AUDIO 权限后调用） */
+    /**
+     * 6.4 初始化 SpeechRecognizer，显式尝试厂商自带 RecognitionService
+     */
+    private void initSpeechRecognizer() {
+        try {
+            // 尝试厂商自带的 RecognitionService
+            ComponentName service = findBestRecognitionService();
+            if (service != null) {
+                try {
+                    speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this, service);
+                } catch (Exception e) {
+                    speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+                }
+            } else {
+                speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+            }
+            speechRecognizer.setRecognitionListener(new SpeechListener());
+        } catch (Exception e) {
+            speechRecognizer = null;
+        }
+    }
+
+    /**
+     * 6.4 查找系统中最佳的 RecognitionService
+     * 优先级：厂商自带 > Google > 默认
+     */
+    private ComponentName findBestRecognitionService() {
+        try {
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            PackageManager pm = getPackageManager();
+            List<ResolveInfo> services = pm.queryIntentServices(intent, 0);
+            if (services == null || services.isEmpty()) return null;
+
+            // 厂商优先级列表
+            String[] vendorPrefixes = {
+                    "com.vivo", "com.huawei", "com.miui", "com.xiaomi",
+                    "com.oppo", "com.coloros", "com.meizu", "com.samsung",
+                    "com.google.android.googlequicksearchbox"
+            };
+
+            // 先找厂商服务
+            for (String prefix : vendorPrefixes) {
+                for (ResolveInfo ri : services) {
+                    if (ri.serviceInfo != null && ri.serviceInfo.packageName.startsWith(prefix)) {
+                        return new ComponentName(ri.serviceInfo.packageName, ri.serviceInfo.name);
+                    }
+                }
+            }
+            // 找到任何可用的服务
+            for (ResolveInfo ri : services) {
+                if (ri.serviceInfo != null) {
+                    return new ComponentName(ri.serviceInfo.packageName, ri.serviceInfo.name);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    /** 6.4 启动语音识别（已取得 RECORD_AUDIO 权限后调用） */
     private void startListening() {
+        if (speechRecognizer == null) {
+            initSpeechRecognizer();
+            if (speechRecognizer == null) {
+                tvHint.setText("无法启动语音识别，请检查系统语音服务");
+                return;
+            }
+        }
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN");
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
-        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "请说出金额和用途，如：花了25元吃午餐");
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
         try {
+            isListening = true;
             btnSpeak.setEnabled(false);
             btnSpeak.setText("🎤 正在录音...");
-            tvHint.setText("正在启动语音识别...");
-            speechLauncher.launch(intent);
+            progressRecord.setVisibility(View.VISIBLE);
+            tvHint.setText("请说话，比如：花了 25 元吃午餐");
+            speechRecognizer.startListening(intent);
         } catch (Exception e) {
+            isListening = false;
             btnSpeak.setEnabled(true);
             btnSpeak.setText("🎤 点击说话");
-            tvHint.setText("无法启动语音识别：" + e.getMessage());
-            Toast.makeText(this, "设备未安装语音识别应用，可尝试安装讯飞输入法或搜狗输入法",
-                    Toast.LENGTH_LONG).show();
+            progressRecord.setVisibility(View.GONE);
+            tvHint.setText("启动失败：" + e.getMessage());
+        }
+    }
+
+    /** 6.4 ERROR_CLIENT 时重建实例并重试 */
+    private void retryOnClientError() {
+        if (retryCount >= MAX_RETRY) {
+            tvHint.setText("语音识别不可用，请尝试：\n1. 检查系统语音服务是否开启\n2. 说出更清晰的语句\n3. 或手动输入金额");
+            return;
+        }
+        retryCount++;
+        try {
+            if (speechRecognizer != null) {
+                try { speechRecognizer.stopListening(); } catch (Exception ignored) {}
+                try { speechRecognizer.cancel(); } catch (Exception ignored) {}
+                try { speechRecognizer.destroy(); } catch (Exception ignored) {}
+                speechRecognizer = null;
+            }
+            initSpeechRecognizer();
+            tvHint.setText("正在重试...");
+            startListening();
+        } catch (Exception e) {
+            tvHint.setText("重试失败：" + e.getMessage());
+        }
+    }
+
+    private class SpeechListener implements RecognitionListener {
+        @Override
+        public void onReadyForSpeech(Bundle params) {
+            tvHint.setText("请说话...");
+        }
+        @Override
+        public void onBeginningOfSpeech() {
+            tvHint.setText("正在听...");
+        }
+        @Override
+        public void onRmsChanged(float rmsdB) {}
+        @Override
+        public void onBufferReceived(byte[] buffer) {}
+        @Override
+        public void onEndOfSpeech() {
+            tvHint.setText("识别中...");
+        }
+        @Override
+        public void onError(int error) {
+            isListening = false;
+            btnSpeak.setEnabled(true);
+            btnSpeak.setText("🎤 点击说话");
+            progressRecord.setVisibility(View.GONE);
+            String msg;
+            switch (error) {
+                case SpeechRecognizer.ERROR_NO_MATCH: msg = "未识别到内容，请重试"; break;
+                case SpeechRecognizer.ERROR_SPEECH_TIMEOUT: msg = "超时未说话，请重试"; break;
+                case SpeechRecognizer.ERROR_AUDIO: msg = "音频错误，请检查麦克风"; break;
+                case SpeechRecognizer.ERROR_RECOGNIZER_BUSY: msg = "识别器忙，请稍后"; break;
+                case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS: msg = "需要麦克风权限"; break;
+                case SpeechRecognizer.ERROR_NETWORK: msg = "网络错误，语音识别需要联网"; break;
+                case SpeechRecognizer.ERROR_NETWORK_TIMEOUT: msg = "网络超时，请重试"; break;
+                case SpeechRecognizer.ERROR_SERVER: msg = "服务器错误，请稍后重试"; break;
+                case SpeechRecognizer.ERROR_CLIENT:
+                    // 6.4 ERROR_CLIENT 自动重试
+                    retryOnClientError();
+                    return;
+                case SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED: msg = "语言不支持"; break;
+                case SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE: msg = "语言数据不可用"; break;
+                default: msg = "识别错误（" + error + "），请重试"; break;
+            }
+            tvHint.setText(msg);
+        }
+        @Override
+        public void onResults(Bundle results) {
+            isListening = false;
+            btnSpeak.setEnabled(true);
+            btnSpeak.setText("🎤 点击说话");
+            progressRecord.setVisibility(View.GONE);
+            retryCount = 0;
+            ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+            if (matches != null && !matches.isEmpty()) {
+                String text = matches.get(0);
+                tvResult.setText(text);
+                parseText(text);
+            } else {
+                tvHint.setText("未识别到内容");
+            }
+        }
+        @Override
+        public void onPartialResults(Bundle partialResults) {
+            ArrayList<String> partial = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+            if (partial != null && !partial.isEmpty()) {
+                tvResult.setText(partial.get(0));
+            }
+        }
+        @Override
+        public void onEvent(int eventType, Bundle params) {}
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (speechRecognizer != null) {
+            try {
+                if (isListening) speechRecognizer.stopListening();
+            } catch (Exception ignored) {}
+            try { speechRecognizer.cancel(); } catch (Exception ignored) {}
+            try { speechRecognizer.destroy(); } catch (Exception ignored) {}
+            speechRecognizer = null;
         }
     }
 
     /** 解析语音识别文本，提取金额和备注 */
     private void parseText(String text) {
-        // 金额：支持 "25.5元" "25块" "25.5" "二十五元" 等
         double amount = 0;
         Pattern p = Pattern.compile("(\\d+(?:\\.\\d{1,2})?)\\s*(?:元|块钱?|圆|RMB|￥|¥)?");
         Matcher m = p.matcher(text);
@@ -191,27 +356,20 @@ public class VoiceRecordActivity extends AppCompatActivity {
             } catch (NumberFormatException ignored) {
             }
         }
-
-        // 中文数字转阿拉伯（简单实现：支持 0-9999）
         if (amount == 0) {
             amount = parseChineseNumber(text);
         }
-
-        // 备注：去除金额后的剩余文本
         String remark = text;
         if (m.find(0)) {
             remark = text.replace(m.group(0), "").trim();
         }
-        // 去除"花了""花了""收入""支出"等关键词
         remark = remark.replaceAll("(?:我|今天|昨天)?(?:花了|花|买了|买|付了|付|收入|收到|工资|报销)", "").trim();
         if (remark.isEmpty()) {
             remark = text;
         }
-        // 截断过长备注
         if (remark.length() > 30) {
             remark = remark.substring(0, 30);
         }
-
         parsedAmount = amount;
         parsedRemark = remark;
         tvParsedAmount.setText(String.format(Locale.getDefault(), "¥%.2f", amount));
@@ -225,14 +383,12 @@ public class VoiceRecordActivity extends AppCompatActivity {
 
     /** 简单中文数字解析（0-9999） */
     private double parseChineseNumber(String text) {
-        // 匹配 "二十五元" "三十五块" 等
         Pattern p = Pattern.compile("([零一二三四五六七八九十百千万两]+)\\s*(?:元|块|圆)?");
         Matcher m = p.matcher(text);
         if (!m.find()) return 0;
         String s = m.group(1);
         double result = 0;
         double temp = 0;
-        double unit = 1;
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
             double v = 0;
