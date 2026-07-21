@@ -121,21 +121,13 @@ public class RecordsFragment extends Fragment {
             showMoreDialog();
         });
 
-        // 5.5 搜索按钮：默认折叠，点击展开/折叠搜索栏
+        // 5.5.2 搜索栏常驻显示：点击搜索按钮聚焦并弹出输入法
         view.findViewById(R.id.btnSearch).setOnClickListener(v -> {
             HapticHelper.light(getContext());
-            if (etSearch.getVisibility() == View.VISIBLE) {
-                // 已展开 → 折叠并清空
-                etSearch.setText("");
-                etSearch.setVisibility(View.GONE);
-            } else {
-                etSearch.setVisibility(View.VISIBLE);
-                etSearch.requestFocus();
-                // 弹出输入法
-                InputMethodManager imm = (InputMethodManager)
-                        getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                if (imm != null) imm.showSoftInput(etSearch, 0);
-            }
+            etSearch.requestFocus();
+            InputMethodManager imm = (InputMethodManager)
+                    getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) imm.showSoftInput(etSearch, 0);
         });
 
         // 搜索框

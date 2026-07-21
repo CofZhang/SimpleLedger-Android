@@ -184,7 +184,7 @@
             android:progressTint="@color/colorPrimary"
             android:visibility="gone" />
 
-        <!-- 搜索栏（默认折叠，点击搜索按钮才展开） -->
+        <!-- 5.5.2 搜索栏改为常驻显示 -->
         <EditText
             android:id="@+id/etSearch"
             android:layout_width="match_parent"
@@ -199,8 +199,7 @@
             android:singleLine="true"
             android:textColor="@color/text_primary"
             android:textColorHint="@color/text_hint"
-            android:textSize="12sp"
-            android:visibility="gone" />
+            android:textSize="12sp" />
     </LinearLayout>
 
     <!-- 2. 记录列表/空白状态（占据剩余空间） -->
