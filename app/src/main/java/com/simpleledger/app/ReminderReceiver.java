@@ -33,9 +33,11 @@ public class ReminderReceiver extends BroadcastReceiver {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "记账提醒",
-                    NotificationManager.IMPORTANCE_DEFAULT);
+                    NotificationManager.IMPORTANCE_HIGH);
             channel.setDescription("每日记账提醒");
             channel.enableVibration(true);
+            channel.enableLights(true);
+            channel.setShowBadge(true);
             nm.createNotificationChannel(channel);
         }
 
@@ -50,7 +52,9 @@ public class ReminderReceiver extends BroadcastReceiver {
                 .setContentText("今天记账了吗？点击记一笔~")
                 .setAutoCancel(true)
                 .setContentIntent(pi)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
         nm.notify(NOTIFICATION_ID, builder.build());
     }

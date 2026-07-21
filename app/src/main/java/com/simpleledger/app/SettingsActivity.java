@@ -1,17 +1,23 @@
 package com.simpleledger.app;
 
+import android.Manifest;
 import android.app.TimePickerDialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -42,6 +48,11 @@ public class SettingsActivity extends AppCompatActivity {
     private static final int REQUEST_EXPORT_CSV = 1001;
     private static final int REQUEST_IMPORT_CSV = 1002;
 
+    // 5.8 通知权限请求 launcher（Android 13+）
+    private ActivityResultLauncher<String> requestNotificationPermissionLauncher;
+    // 5.8 触觉反馈等待权限的回调标记
+    private boolean pendingHapticEnabled = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,6 +60,33 @@ public class SettingsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_settings);
 
         dbHelper = new DatabaseHelper(this);
+
+        // 5.8 注册通知权限请求 launcher（Android 13+）
+        requestNotificationPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                isGranted -> {
+                    if (isGranted) {
+                        ReminderReceiver.setReminder(this, true, ReminderReceiver.getHour(this), ReminderReceiver.getMinute(this));
+                        tvReminderTime.setEnabled(true);
+                        findViewById(R.id.itemReminderTime).setAlpha(1.0f);
+                        Toast.makeText(this, "已开启每日提醒", Toast.LENGTH_SHORT).show();
+                    } else {
+                        swReminder.setChecked(false);
+                        Toast.makeText(this, "未授予通知权限，无法显示提醒", Toast.LENGTH_LONG).show();
+                        // 引导用户去系统设置开启通知权限
+                        new AlertDialog.Builder(this)
+                                .setTitle("需要通知权限")
+                                .setMessage("记账提醒需要通知权限才能在通知栏显示，是否前往系统设置开启？")
+                                .setPositiveButton(R.string.confirm, (d, w) -> {
+                                    Intent intent = new Intent();
+                                    intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+                                    startActivity(intent);
+                                })
+                                .setNegativeButton(R.string.cancel, null)
+                                .show();
+                    }
+                });
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
             int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
@@ -76,10 +114,27 @@ public class SettingsActivity extends AppCompatActivity {
 
         swReminder.setOnCheckedChangeListener((button, checked) -> {
             HapticHelper.light(this);
-            ReminderReceiver.setReminder(this, checked, hour, minute);
-            tvReminderTime.setEnabled(checked);
-            findViewById(R.id.itemReminderTime).setAlpha(checked ? 1.0f : 0.5f);
-            Toast.makeText(this, checked ? "已开启每日提醒" : "已关闭提醒", Toast.LENGTH_SHORT).show();
+            if (checked) {
+                // 5.8 Android 13+ 需要运行时请求 POST_NOTIFICATIONS 权限
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                            != PackageManager.PERMISSION_GRANTED) {
+                        // 先暂时保持开关关闭，等待权限回调
+                        requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+                        return;
+                    }
+                }
+                // 已有权限，直接开启提醒
+                ReminderReceiver.setReminder(this, true, hour, minute);
+                tvReminderTime.setEnabled(true);
+                findViewById(R.id.itemReminderTime).setAlpha(1.0f);
+                Toast.makeText(this, "已开启每日提醒", Toast.LENGTH_SHORT).show();
+            } else {
+                ReminderReceiver.setReminder(this, false, hour, minute);
+                tvReminderTime.setEnabled(false);
+                findViewById(R.id.itemReminderTime).setAlpha(0.5f);
+                Toast.makeText(this, "已关闭提醒", Toast.LENGTH_SHORT).show();
+            }
         });
 
         findViewById(R.id.itemReminderTime).setOnClickListener(v -> {
@@ -101,6 +156,16 @@ public class SettingsActivity extends AppCompatActivity {
             if (checked) HapticHelper.light(this);
             Toast.makeText(this, checked ? "已开启触觉反馈" : "已关闭触觉反馈", Toast.LENGTH_SHORT).show();
         });
+
+        // 5.8 修复：动态读取并显示当前应用版本号（替代布局中硬编码的 "5.3"）
+        TextView tvVersion = findViewById(R.id.tvVersion);
+        try {
+            String versionName = getPackageManager()
+                    .getPackageInfo(getPackageName(), 0).versionName;
+            tvVersion.setText(versionName != null ? versionName : "未知");
+        } catch (PackageManager.NameNotFoundException e) {
+            tvVersion.setText("未知");
+        }
 
         // 跳转年度热力图
         findViewById(R.id.itemHeatmap).setOnClickListener(v -> {
