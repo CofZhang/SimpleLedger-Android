@@ -187,16 +187,24 @@ public class GroupedRecordAdapter extends RecyclerView.Adapter<RecyclerView.View
             }
             vh.tvAmount.setText(amountStr);
 
+            // 6.6 修复：用 holder.getAdapterPosition() 获取实时 position，
+            // 避免 ViewHolder 复用后 position 过期导致"选 A 删 B"
             vh.itemView.setOnLongClickListener(v -> {
                 if (longListener != null) {
-                    longListener.onRecordLongClick(record, position);
+                    int pos = holder.getAdapterPosition();
+                    if (pos != RecyclerView.NO_POSITION) {
+                        longListener.onRecordLongClick(record, pos);
+                    }
                 }
                 return true;
             });
 
             vh.itemView.setOnClickListener(v -> {
                 if (clickListener != null) {
-                    clickListener.onRecordClick(record, position);
+                    int pos = holder.getAdapterPosition();
+                    if (pos != RecyclerView.NO_POSITION) {
+                        clickListener.onRecordClick(record, pos);
+                    }
                 }
             });
         }

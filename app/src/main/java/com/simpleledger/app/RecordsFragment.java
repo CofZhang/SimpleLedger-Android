@@ -8,8 +8,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -51,11 +49,6 @@ public class RecordsFragment extends Fragment {
     private Calendar currentMonth;
     private boolean searching = false;
     private String searchKeyword = "";
-
-    // 4.5 删除撤销支持
-    private Record lastDeletedRecord;
-    private final Handler undoHandler = new Handler(Looper.getMainLooper());
-    private Runnable undoRunnable;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -387,33 +380,51 @@ public class RecordsFragment extends Fragment {
         }
     }
 
-    /** 4.5 删除并支持 10 秒内撤销 */
+    /**
+     * 6.6 严重 bug 修复：删除账单
+     *
+     * 原有问题：
+     *   1) 延迟 10 秒才删数据库，App 退出后 Runnable 不执行 → 重启后记录恢复
+     *   2) position 来自 GroupedRecordAdapter（含 DateHeader），但 records 是 flat list → 删错记录
+     *
+     * 修复方案：
+     *   1) 先删数据库再移除 UI，确保数据持久化
+     *   2) 通过 record.getId() 在 records 中查找真实索引，不依赖 position
+     *   3) 撤销时重新插入数据库
+     */
     private void deleteWithUndo(Record record, int position) {
-        lastDeletedRecord = record;
-        // 临时移除（不立即删数据库）
-        records.remove(position);
+        // 1. 先从数据库删除（立即生效，App 退出也不影响）
+        dbHelper.deleteRecord(record.getId());
+
+        // 2. 通过 id 在 flat list 中查找真实索引（adapter position 含 DateHeader，与 records 不同步）
+        int indexInRecords = -1;
+        for (int i = 0; i < records.size(); i++) {
+            if (records.get(i).getId() == record.getId()) {
+                indexInRecords = i;
+                break;
+            }
+        }
+        if (indexInRecords == -1) {
+            // 兜底：records 中找不到，直接重新加载
+            loadData();
+            return;
+        }
+
+        // 3. 从 UI 移除
+        records.remove(indexInRecords);
         adapter.updateData(records);
         updateSummary();
 
-        if (undoRunnable != null) undoHandler.removeCallbacks(undoRunnable);
-        undoRunnable = () -> {
-            // 10秒后真正删除
-            if (lastDeletedRecord != null && lastDeletedRecord.getId() == record.getId()) {
-                dbHelper.deleteRecord(record.getId());
-                lastDeletedRecord = null;
-                updateSummary();
-            }
-        };
-        undoHandler.postDelayed(undoRunnable, 10000);
-
+        // 4. 撤销：重新插入数据库（需要 final 变量供 lambda 引用）
+        final int restoreIndex = indexInRecords;
         Snackbar.make(rvRecords, "已删除「" + record.getCategoryName() + "」", Snackbar.LENGTH_LONG)
                 .setAction("撤销", v -> {
                     HapticHelper.light(getContext());
-                    undoHandler.removeCallbacks(undoRunnable);
-                    records.add(position, record);
+                    long newId = dbHelper.addRecord(record);
+                    record.setId(newId);
+                    records.add(restoreIndex, record);
                     adapter.updateData(records);
                     updateSummary();
-                    lastDeletedRecord = null;
                     Toast.makeText(getContext(), "已恢复", Toast.LENGTH_SHORT).show();
                 })
                 .show();
